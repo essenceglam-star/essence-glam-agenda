@@ -140,6 +140,8 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:60
 .reserva .dep{font-size:15px}
 .reserva .dep b{font:600 18px var(--f-num);color:var(--accent)}
 body.tem-reserva .wrap{padding-bottom:360px}
+/* fora do Claude não vem essa regra pronta: elemento com hidden some de verdade (login, toast, formulários) */
+[hidden]{display:none!important}
 /* tela de login (fora do Claude, cada uma entra com o próprio e-mail e senha) */
 .login{position:fixed;inset:0;z-index:80;background:var(--bg) radial-gradient(120% 70% at 50% 0%,#FFF8EA 0%,transparent 70%) no-repeat;display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
 .lgbox{width:100%;max-width:360px;display:grid;gap:12px;text-align:center}
