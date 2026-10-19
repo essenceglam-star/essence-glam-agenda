@@ -80,6 +80,14 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
 .chip[aria-pressed="true"]{background:var(--gold);color:#fff;border-color:#8C6220}
 .sw{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
 .list{display:flex;flex-direction:column;gap:8px}
+.appt.bloq{background:repeating-linear-gradient(135deg,var(--surface) 0 10px,rgba(120,110,100,.07) 10px 20px);border-style:dashed}
+.cal .ev.bloq{background:#e6e0d7;color:#6f675d;border-left-color:#9b948a}
+.achou{display:grid;gap:6px;margin:-4px 0 4px}
+.achou .line{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.aviso{background:#fbf1dc;border:1px solid #e7c98a;border-radius:10px;padding:8px 10px;font-size:.92em}
+.busca-ag{margin-bottom:12px}
+.hist .line{align-items:flex-start}
+.hist small{display:block}
 .appt{display:grid;grid-template-columns:62px 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;border-left:4px solid var(--c,var(--accent))}
 .appt .h{font:500 15px var(--f-num);font-variant-numeric:tabular-nums}
 .appt .h small{display:block;font-size:11px;color:var(--muted)}
@@ -481,7 +489,9 @@ function calendarioMes(doProf){
     const evs = ags.slice(0, ags.length > MAX ? MAX-1 : MAX).map(a => { const p = profById(a.profId) || {}; const c = cliById(a.clienteId);
       return '<span class="ev'+(a.status==="concluido"?" ok":"")+(a.status==="confirmado"?" conf":"")+'" style="--c:'+esc(p.cor||"#B0843A")+'"><s>'+esc(a.hora)+'</s> '+esc(primeiroNome(c)||"Cliente")+'</span>'; }).join("");
     const mais = ags.length > MAX ? '<span class="more">+'+(ags.length-MAX+1)+'</span>' : '';
-    html += '<button class="'+cls+'" data-dia="'+d+'" aria-label="'+esc(fmtDia(d))+(ags.length? ", "+ags.length+" horário"+(ags.length>1?"s":""):"")+'" aria-pressed="'+(d===S.dia)+'"><span class="n">'+parseYmd(d).getDate()+'</span>'+evs+mais+'</button>';
+    const bqs = bloqueios().filter(b => b.data === d && bloqDoFiltro(b, S.prof));
+    const evBq = bqs.length ? '<span class="ev bloq">🔒 '+(bqs.some(b=>b.diaTodo) ? "fechado" : esc(bqs[0].de))+'</span>' : '';
+    html += '<button class="'+cls+'" data-dia="'+d+'" aria-label="'+esc(fmtDia(d))+(ags.length? ", "+ags.length+" horário"+(ags.length>1?"s":""):"")+'" aria-pressed="'+(d===S.dia)+'"><span class="n">'+parseYmd(d).getDate()+'</span>'+evBq+evs+mais+'</button>';
   }
   return html+'</div>';
 }
@@ -491,18 +501,21 @@ function viewAgenda(v){
   const [y,mm] = S.dia.slice(0,7).split("-").map(Number);
   let html = '<div class="datebar"><button class="btn-sm" data-cm="-1" aria-label="Mês anterior">‹</button><div class="label">'+MES[mm-1]+' '+y+'</div><button class="btn-sm" data-cm="1" aria-label="Próximo mês">›</button></div>';
   html += painelConfirmar();
+  html += '<div class="busca-ag"><input id="buscaAg" type="search" autocomplete="off" placeholder="🔍 Buscar cliente por nome ou número"><div id="buscaAgRes" class="achou" style="margin-top:6px"></div></div>';
   html += profChips();
   html += calendarioMes(doProf);
   html += '<div class="dayhead"><h2>'+esc(fmtDia(S.dia))+'</h2>'+(S.dia!==today()?'<button class="btn-sm" data-dia="'+today()+'">Hoje</button>':'')+'</div>';
-  html += '<div class="row" style="margin-bottom:12px"><button class="btn-primary grow" data-new style="justify-content:center">+ Novo agendamento</button></div>';
+  html += '<div class="row" style="margin-bottom:12px"><button class="btn-primary grow" data-new style="justify-content:center">+ Novo agendamento</button><button data-bloq>🔒 Fechar horário</button></div>';
   if (!cfg().profissionais.length || !cfg().servicos.length){
     html += '<div class="banner">Antes do primeiro agendamento, cadastre as profissionais e os serviços (com preço) em <b>Ajustes</b>.</div>';
   }
-  if (!doDia.length){
+  const bqDia = bloqueios().filter(b => b.data === S.dia && bloqDoFiltro(b, S.prof));
+  if (!doDia.length && !bqDia.length){
     html += '<div class="empty"><b>Nenhum horário neste dia</b>Toque em “Novo agendamento” pra marcar uma cliente.</div>';
   } else {
     const total = doDia.filter(a=>a.status==="concluido").reduce((s,a)=>s+(a.pago?.valor||0),0);
-    html += '<div class="list">'+doDia.map(cardAg).join("")+'</div>';
+    const itens = [...bqDia.map(b => ({h: b.diaTodo ? "00:00" : b.de, html: cardBloq(b)})), ...doDia.map(a => ({h: a.hora, html: cardAg(a)}))].sort((x,y)=>x.h.localeCompare(y.h));
+    html += '<div class="list">'+itens.map(x=>x.html).join("")+'</div>';
     if (total) html += '<p class="note" style="margin-top:10px">Recebido neste dia: <span class="money">'+brl(total)+'</span></p>';
   }
   v.innerHTML = html;
@@ -510,6 +523,13 @@ function viewAgenda(v){
   v.querySelectorAll("[data-dia]").forEach(b => b.onclick = () => { const mudouMes = b.dataset.dia.slice(0,7) !== S.dia.slice(0,7); S.dia = b.dataset.dia; render(); if (!mudouMes) { const h = $(".dayhead"); if (h && h.getBoundingClientRect().top > innerHeight*0.6) h.scrollIntoView({behavior:"smooth", block:"start"}); } });
   bindProfChips(v);
   v.querySelector("[data-new]").onclick = () => formAg();
+  v.querySelector("[data-bloq]").onclick = () => formBloq();
+  v.querySelectorAll("[data-bdel]").forEach(b => b.onclick = () => abrirBloq(b.dataset.bdel));
+  const ba = v.querySelector("#buscaAg"), br = v.querySelector("#buscaAgRes");
+  ba.oninput = () => { const t = ba.value.trim(); if (!t) { br.innerHTML = ""; return; }
+    const r = achaClientes(t, 6);
+    br.innerHTML = r.length ? r.map(c => linhaCli(c, '<button class="btn-sm" data-ficha="'+esc(c.id)+'">Ver ficha</button>')).join("") : '<p class="note" style="margin:0">Ninguém encontrado.</p>';
+    br.querySelectorAll("[data-ficha]").forEach(b => b.onclick = () => fichaCliente(b.dataset.ficha)); };
   v.querySelectorAll("[data-ag]").forEach(b => b.onclick = () => acaoAg(b.dataset.ag, b.dataset.act));
   bindConfWa(v);
   const det = v.querySelector("details.msgbox"); if (det) det.ontoggle = () => { S.confAberto = det.open; };
@@ -551,6 +571,64 @@ async function acaoAg(id, act){
   await run(()=>col("agendamentos").doc(id).update({status:act}), act==="faltou"?"Marcado como falta":act==="confirmado"?"Horário confirmado":"Horário reaberto");
 }
 function clienteOptions(sel){ return S.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?" selected":"")+'>'+esc(c.nome)+'</option>').join(""); }
+/* ---------- clientes: achar pelo nome ou pelo número ---------- */
+const semAcento = s => String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+/* compara só os últimos 8 dígitos: pega o número com ou sem DDD, com ou sem o 9 da frente */
+const telChave = t => digits(t).slice(-8);
+const clientePorTel = t => { const k = telChave(t); return k.length >= 8 ? S.clientes.find(c => telChave(c.telefone) === k) : null; };
+const clientePorNome = n => { const k = semAcento(n); return k.length >= 3 ? S.clientes.find(c => semAcento(c.nome) === k) : null; };
+function achaClientes(q, max){
+  const t = String(q||"").trim(); if (!t) return [];
+  const d = digits(t), k = semAcento(t);
+  return S.clientes.filter(c => d.length >= 3 ? digits(c.telefone).includes(d) : semAcento(c.nome).includes(k))
+    .sort((a,b)=>a.nome.localeCompare(b.nome)).slice(0, max||8);
+}
+const linhaCli = (c, botao) => '<div class="line"><span class="av">'+esc(iniciais(c.nome))+'</span><div class="grow"><b>'+esc(c.nome)+'</b><small>'+esc(c.telefone||"sem telefone")+'</small></div>'+botao+'</div>';
+
+/* ---------- dias e horários fechados (compromisso, folga): ficam na config ---------- */
+const bloqueios = () => cfg().bloqueios || [];
+const bloqIni = b => b.diaTodo ? 0 : toMin(b.de);
+const bloqFim = b => b.diaTodo ? 24*60 : toMin(b.ate);
+const bloqTodas = b => !b.profId || b.profId === "todas";
+const bloqDoFiltro = (b, pid) => pid === "todas" || bloqTodas(b) || b.profId === pid;
+const txtBloq = b => b.diaTodo ? "o dia todo" : "das "+b.de+" às "+b.ate;
+const quemBloq = b => bloqTodas(b) ? "Todas" : (profById(b.profId)?.nome || "");
+function bloqueioEm(data, ini, fim, profs){ return bloqueios().find(b => b.data === data && ini < bloqFim(b) && fim > bloqIni(b) && (bloqTodas(b) || profs.includes(b.profId))); }
+function cardBloq(b){
+  return '<article class="appt bloq" style="--c:#9b948a"><div class="h">🔒<small>'+(b.diaTodo?"dia todo":esc(b.de))+'</small></div><div style="min-width:0"><div class="row"><span class="who grow">Fechado '+esc(txtBloq(b))+'</span></div><div class="what">'+esc(b.motivo||"Sem atendimento")+' · '+esc(quemBloq(b))+'</div><div class="acts"><button class="btn-sm btn-ghost" data-bdel="'+esc(b.id)+'">Abrir esse horário de novo</button></div></div></article>';
+}
+function formBloq(){
+  const ps = cfg().profissionais; const pidPadrao = S.prof !== "todas" ? S.prof : "todas";
+  modal('<h3>Fechar dia ou horário</h3><p class="note">Pra não marcar ninguém por engano num compromisso, folga ou feriado.</p><form class="form" id="fBq">'+
+    '<label class="f">Dia<input type="date" id="bqData" value="'+esc(S.dia)+'" required></label>'+
+    '<label class="row"><input type="checkbox" id="bqTodo" style="width:auto"> O dia todo</label>'+
+    '<div class="two" id="bqHoras"><label class="f">Das<input type="time" id="bqDe" value="13:00"></label><label class="f">Até<input type="time" id="bqAte" value="18:00"></label></div>'+
+    '<label class="f">Quem não vai atender<select id="bqProf"><option value="todas"'+(pidPadrao==="todas"?" selected":"")+'>Todas (estúdio fechado)</option>'+ps.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===pidPadrao?" selected":"")+'>'+esc(p.nome)+'</option>').join("")+'</select></label>'+
+    '<label class="f">Motivo (só vocês veem)<input id="bqMot" placeholder="ex.: compromisso pessoal, médico, feriado"></label>'+
+    '<p class="note" id="bqAviso"></p>'+
+    '<div class="foot"><button type="button" id="bqX">Voltar</button><button class="btn-primary">Fechar horário</button></div></form>', m => {
+    const $ = s => m.querySelector(s);
+    const aviso = () => { const d = $("#bqData").value, todo = $("#bqTodo").checked, pid = $("#bqProf").value;
+      $("#bqHoras").hidden = todo;
+      const ini = todo ? 0 : toMin($("#bqDe").value), fim = todo ? 24*60 : toMin($("#bqAte").value);
+      const ja = S.ags.filter(x => x.data === d && (x.status==="agendado"||x.status==="confirmado") && (pid==="todas" || profsDoAg(x).includes(pid)) && toMin(x.hora) < fim && toMin(x.hora)+(Number(x.duracao)||60) > ini);
+      $("#bqAviso").innerHTML = ja.length ? '<span style="color:var(--warn)">Atenção: já tem horário marcado nesse período: '+ja.map(x=>esc(cliById(x.clienteId)?.nome||"cliente")+' às '+esc(x.hora)).join(", ")+'. Fechar não desmarca ninguém.</span>' : ""; };
+    ["#bqData","#bqTodo","#bqDe","#bqAte","#bqProf"].forEach(s => { $(s).oninput = aviso; $(s).onchange = aviso; }); aviso();
+    $("#bqX").onclick = closeModal;
+    $("#fBq").onsubmit = async e => { e.preventDefault();
+      const todo = $("#bqTodo").checked, de = $("#bqDe").value, ate = $("#bqAte").value;
+      if (!todo && (!de || !ate || toMin(ate) <= toMin(de))) { toast("Confira o horário: o fim tem que ser depois do começo."); return; }
+      const b = {id: "b"+Date.now().toString(36), data: $("#bqData").value, diaTodo: todo, de: todo ? "" : de, ate: todo ? "" : ate, profId: $("#bqProf").value, motivo: $("#bqMot").value.trim()};
+      const limite = addDays(today(), -60); /* os fechados muito antigos saem sozinhos */
+      closeModal();
+      await saveCfg({bloqueios: [...bloqueios().filter(x => x.data >= limite), b]}, "Horário fechado na agenda");
+      S.dia = b.data; render();
+    };
+  });
+}
+function abrirBloq(id){ const b = bloqueios().find(x => x.id === id); if (!b) return;
+  confirmar("Abrir de novo "+txtBloq(b)+" de "+fmtCurto(b.data)+"?", "Abrir horário", () => saveCfg({bloqueios: bloqueios().filter(x => x.id !== id)}, "Horário aberto de novo")); }
+
 /* ---------- vários serviços no mesmo horário + atendimento domiciliar ---------- */
 const domRe = () => { try { return new RegExp(cfg().domicilioServicos || "maquiagem|penteado|babyliss", "i"); } catch(e){ return /maquiagem|penteado|babyliss/i; } };
 const taxaDom = () => { const t = Number(cfg().taxaDomicilio); return isFinite(t) && cfg().taxaDomicilio != null ? t : 30; };
@@ -570,8 +648,9 @@ function formAg(a, cliPre){
   let sel = svcsDoAg(a).map(x => x.id).filter(Boolean);
   const dm = a.domicilio || {};
   modal('<h3>'+(ed?"Editar agendamento":"Novo agendamento")+'</h3><form class="form" id="fAg">'+
-    '<label class="f">Cliente<select id="agCli"><option value="">Escolha…</option><option value="__nova">+ Nova cliente</option>'+clienteOptions(a.clienteId)+'</select></label>'+
-    '<div id="novaCli" class="two" hidden><label class="f">Nome<input id="ncNome" autocomplete="off"></label><label class="f">WhatsApp<input id="ncTel" inputmode="tel" placeholder="(DDD) 9 0000-0000"></label></div>'+
+    '<label class="f">Cliente<input id="agBusca" type="search" autocomplete="off" placeholder="Digite o nome ou o WhatsApp da cliente"></label><div id="agAchou" class="achou"></div>'+
+    '<label class="f"><span class="note" style="margin:0">ou escolha na lista</span><select id="agCli"><option value="">Escolha…</option><option value="__nova">+ Nova cliente</option>'+clienteOptions(a.clienteId)+'</select></label>'+
+    '<div id="novaCli" hidden><div class="two"><label class="f">Nome<input id="ncNome" autocomplete="off"></label><label class="f">WhatsApp<input id="ncTel" inputmode="tel" placeholder="(DDD) 9 0000-0000"></label></div><div id="ncAviso"></div></div>'+
     '<label class="f">Profissional<select id="agProf">'+ps.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===a.profId?" selected":"")+'>'+esc(p.nome)+'</option>').join("")+'</select></label>'+
     '<div class="f"><span>Serviços</span><div id="agLista" class="card" style="padding:6px 10px"></div><select id="agSvc" aria-label="Adicionar serviço"></select></div>'+
     '<div id="agDomBox" hidden><label class="row"><input type="checkbox" id="agDom" style="width:auto"'+(a.domicilio?" checked":"")+'> Atendimento domiciliar (+ <span id="agTaxaTxt"></span>)</label>'+
@@ -609,22 +688,44 @@ function formAg(a, cliPre){
       if (!d || !h) { $("#agConf").textContent = ""; return; }
       const ini = toMin(h), fim = ini+dur; const env = envolvidas();
       const choque = S.ags.find(x => x.id!==a.id && x.data===d && profsDoAg(x).some(q=>env.includes(q)) && (x.status==="agendado"||x.status==="confirmado") && toMin(x.hora) < fim && toMin(x.hora)+(Number(x.duracao)||60) > ini);
-      $("#agConf").innerHTML = (env.length > 1 ? 'Entra na agenda de '+esc(env.map(id=>profById(id)?.nome).filter(Boolean).join(" e "))+' e o valor é dividido entre elas. ' : '') + (choque ? '<span style="color:var(--warn)">Atenção: '+esc(nomesProfs(choque))+' já tem '+esc(cliById(choque.clienteId)?.nome||"uma cliente")+' às '+esc(choque.hora)+'.</span>' : "");
+      const bq = bloqueioEm(d, ini, fim, env); m.__bq = bq;
+      $("#agConf").innerHTML = (bq ? '<span style="color:var(--warn);font-weight:600">🔒 Horário fechado: '+esc(bq.motivo||"sem atendimento")+' ('+esc(txtBloq(bq))+', '+esc(quemBloq(bq))+').</span> ' : '') + (env.length > 1 ? 'Entra na agenda de '+esc(env.map(id=>profById(id)?.nome).filter(Boolean).join(" e "))+' e o valor é dividido entre elas. ' : '') + (choque ? '<span style="color:var(--warn)">Atenção: '+esc(nomesProfs(choque))+' já tem '+esc(cliById(choque.clienteId)?.nome||"uma cliente")+' às '+esc(choque.hora)+'.</span>' : "");
     };
     fLista(); fSvc(); if (!ed) preVal();
     $("#agProf").onchange = () => { fSvc(); checa(); };
     $("#agSvc").onchange = e => { const id = e.target.value; if (id) { sel.push(id); muda(); } };
     $("#agDom").onchange = () => { fLista(); preVal(); };
     ["#agData","#agHora","#agDur"].forEach(s => $(s).oninput = checa); checa();
-    $("#agCli").onchange = e => { $("#novaCli").hidden = e.target.value !== "__nova"; };
+    $("#agCli").onchange = e => { $("#novaCli").hidden = e.target.value !== "__nova"; checa(); };
+    /* escolher uma cliente que já existe */
+    const usaCli = id => { $("#agCli").value = id; $("#novaCli").hidden = true; $("#agBusca").value = ""; $("#ncAviso").innerHTML = "";
+      const c = cliById(id); $("#agAchou").innerHTML = c ? '<p class="note" style="margin:0;color:var(--ok)">✓ '+esc(c.nome)+' adicionada a este horário.</p>' : ""; checa(); };
+    const ligaUsa = el => el.querySelectorAll("[data-usa]").forEach(b => b.onclick = () => usaCli(b.dataset.usa));
+    const btnUsa = c => '<button type="button" class="btn-sm btn-primary" data-usa="'+esc(c.id)+'">Adicionar cliente</button>';
+    $("#agBusca").oninput = () => { const t = $("#agBusca").value.trim(); const el = $("#agAchou");
+      if (!t) { el.innerHTML = ""; return; }
+      const r = achaClientes(t, 5); const ehNum = digits(t).length >= 3;
+      el.innerHTML = r.length
+        ? '<p class="aviso" style="margin:0">'+(r.length === 1 ? 'Essa cliente já está cadastrada:' : 'Já cadastradas:')+'</p>'+r.map(c => linhaCli(c, btnUsa(c))).join("")
+        : '<p class="note" style="margin:0">Ninguém cadastrado com '+(ehNum?"esse número":"esse nome")+'. <button type="button" class="btn-sm" id="agCad">+ Cadastrar nova cliente</button></p>';
+      ligaUsa(el);
+      const cad = el.querySelector("#agCad"); if (cad) cad.onclick = () => { $("#agCli").value = "__nova"; $("#novaCli").hidden = false; if (ehNum) $("#ncTel").value = t; else $("#ncNome").value = t; el.innerHTML = ""; $("#agBusca").value = ""; (ehNum ? $("#ncNome") : $("#ncTel")).focus(); };
+    };
+    /* cadastrando nova: avisa se o número (ou o nome) já é de alguém */
+    const avisoNova = () => { const c = clientePorTel($("#ncTel").value) || clientePorNome($("#ncNome").value);
+      $("#ncAviso").innerHTML = c ? '<div class="aviso">⚠ '+(clientePorTel($("#ncTel").value) ? 'Esse número já é de' : 'Já existe uma cliente chamada')+' <b>'+esc(c.nome)+'</b>'+(c.telefone?' ('+esc(c.telefone)+')':'')+'.<div class="row" style="margin-top:6px">'+btnUsa(c)+'</div></div>' : "";
+      ligaUsa($("#ncAviso")); };
+    $("#ncTel").oninput = avisoNova; $("#ncNome").oninput = avisoNova;
     $("#agX").onclick = closeModal;
     if (ed) $("#agDel").onclick = () => confirmar("Apagar este agendamento?", "Apagar", () => run(()=>col("agendamentos").doc(a.id).delete(), "Agendamento apagado"));
     $("#fAg").onsubmit = async e => {
       e.preventDefault();
       if (!sel.length) { toast("Escolha pelo menos um serviço."); return; }
+      checa(); if (m.__bq && !m.__forca) { m.__forca = true; toast("Esse horário está fechado na agenda. Se quiser marcar mesmo assim, toque em Salvar de novo."); return; }
       let cid = $("#agCli").value;
       if (cid === "__nova"){
         const nome = $("#ncNome").value.trim(); if (!nome) { toast("Escreva o nome da cliente."); return; }
+        const dup = clientePorTel($("#ncTel").value); if (dup) { avisoNova(); toast("Esse número já é da "+dup.nome+". Toque em “Adicionar cliente”."); return; }
         const ref = col("clientes").doc(); cid = ref.id;
         const ok = await run(()=>ref.set({nome, telefone: $("#ncTel").value.trim(), obs:"", criadoEm: today()})); if (!ok) return;
       }
@@ -745,7 +846,7 @@ function marcarEnvioProx(id, enviadas){ return run(()=>col("acompanhamentos").do
 /* ---------- CLIENTES ---------- */
 function viewClientes(v){
   const q = S.busca.trim().toLowerCase();
-  const lista = S.clientes.filter(c => !q || c.nome.toLowerCase().includes(q) || digits(c.telefone).includes(digits(q)||"§")).sort((a,b)=>a.nome.localeCompare(b.nome));
+  const lista = q ? achaClientes(q, 9999) : S.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
   let html = '<div class="row search"><input class="grow" id="busca" type="search" placeholder="Buscar por nome ou telefone" value="'+esc(S.busca)+'"><button class="btn-primary" id="novaC">+ Cliente</button></div>';
   if (!S.clientes.length) html += '<div class="empty"><b>Nenhuma cliente cadastrada</b>Cadastre aqui ou direto ao marcar um horário na Agenda.</div>';
   else if (!lista.length) html += '<div class="empty"><b>Ninguém encontrado</b>Confira o nome ou cadastre uma cliente nova.</div>';
@@ -757,12 +858,16 @@ function viewClientes(v){
 }
 function formCliente(c){
   const ed = !!c; c = c || {nome:"", telefone:"", nascimento:"", obs:""};
-  modal('<h3>'+(ed?"Editar cliente":"Nova cliente")+'</h3><form class="form" id="fCli"><label class="f">Nome<input id="clNome" value="'+esc(c.nome)+'" required></label><div class="two"><label class="f">WhatsApp<input id="clTel" inputmode="tel" value="'+esc(c.telefone)+'" placeholder="(DDD) 9 0000-0000"></label><label class="f">Aniversário<input id="clNasc" type="date" value="'+esc(c.nascimento||"")+'"></label></div><label class="f">Anotações (alergias, preferências, ficha)<textarea id="clObs">'+esc(c.obs||"")+'</textarea></label><div class="foot">'+(ed?'<button type="button" class="btn-danger" id="clDel">Apagar</button>':'')+'<button type="button" id="clX">Voltar</button><button class="btn-primary">Salvar</button></div></form>', m => {
+  modal('<h3>'+(ed?"Editar cliente":"Nova cliente")+'</h3><form class="form" id="fCli"><label class="f">Nome<input id="clNome" value="'+esc(c.nome)+'" required></label><div class="two"><label class="f">WhatsApp<input id="clTel" inputmode="tel" value="'+esc(c.telefone)+'" placeholder="(DDD) 9 0000-0000"></label><label class="f">Aniversário<input id="clNasc" type="date" value="'+esc(c.nascimento||"")+'"></label></div><div id="clAviso"></div><label class="f">Anotações (alergias, preferências, ficha)<textarea id="clObs">'+esc(c.obs||"")+'</textarea></label><div class="foot">'+(ed?'<button type="button" class="btn-danger" id="clDel">Apagar</button>':'')+'<button type="button" id="clX">Voltar</button><button class="btn-primary">Salvar</button></div></form>', m => {
     m.querySelector("#clX").onclick = closeModal;
+    const avCli = () => { const t = m.querySelector("#clTel").value; const o = clientePorTel(t); const el = m.querySelector("#clAviso");
+      el.innerHTML = o && o.id !== c.id ? '<div class="aviso">⚠ Esse número já é de <b>'+esc(o.nome)+'</b>. <button type="button" class="btn-sm" id="clVer">Ver ficha dela</button></div>' : "";
+      const vb = el.querySelector("#clVer"); if (vb) vb.onclick = () => fichaCliente(o.id); return o && o.id !== c.id ? o : null; };
+    m.querySelector("#clTel").oninput = avCli;
     if (ed) m.querySelector("#clDel").onclick = () => confirmar("Apagar "+c.nome+"? O histórico de horários continua no caixa.", "Apagar cliente", () => run(()=>col("clientes").doc(c.id).delete(), "Cliente apagada"));
     m.querySelector("#fCli").onsubmit = async e => { e.preventDefault();
       const body = {nome: m.querySelector("#clNome").value.trim(), telefone: m.querySelector("#clTel").value.trim(), nascimento: m.querySelector("#clNasc").value, obs: m.querySelector("#clObs").value.trim()};
-      if (!body.nome) return; closeModal();
+      if (!body.nome) return; if (avCli()) { toast("Esse número já está cadastrado."); return; } closeModal();
       if (ed) await run(()=>col("clientes").doc(c.id).update(body), "Cliente salva");
       else await run(()=>col("clientes").doc().set({...body, criadoEm: today()}), "Cliente cadastrada");
     };
@@ -774,11 +879,18 @@ function fichaCliente(id){
   const gasto = ags.filter(a=>a.status==="concluido").reduce((s,a)=>s+(a.pago?.valor||0),0);
   const faltas = ags.filter(a=>a.status==="faltou").length;
   const msg = "Oi, "+(c.nome.split(" ")[0])+"! ";
+  const agora = today();
+  const futuros = ags.filter(a => a.data >= agora && (a.status==="agendado"||a.status==="confirmado")).reverse();
+  const passados = ags.filter(a => !futuros.includes(a));
+  const linhaHist = a => '<div class="line"><div class="grow"><b>'+esc(a.servicoNome||"")+'</b><small>'+fmtCurto(a.data)+' às '+esc(a.hora)+' · '+esc(nomesProfs(a)||profById(a.profId)?.nome||"")+(a.status==="concluido" && a.pago?.valor!=null ? ' · '+brl(a.pago.valor)+(a.pago.forma?' ('+esc(a.pago.forma)+')':'') : (a.valor!=null?' · '+brl(a.valor):''))+'</small>'+
+    (a.domicilio ? '<small>🏠 Domiciliar'+(a.domicilio.evento?' · '+esc(a.domicilio.evento):'')+(a.domicilio.estilo?' · '+esc(a.domicilio.estilo):'')+'</small>' : '')+
+    (a.obs ? '<small style="color:var(--ink)">📝 '+esc(a.obs)+'</small>' : '')+'</div><span class="pill st-'+a.status+'">'+ST[a.status]+'</span></div>';
   modal('<h3>'+esc(c.nome)+'</h3><div class="row" style="margin-bottom:10px">'+waBtn(c.telefone, msg, "Abrir conversa", " ")+'<span class="wa-num">'+esc(c.telefone||"")+'</span></div>'+
     '<div class="kpis" style="margin-bottom:12px"><div class="kpi"><span>Atendimentos</span><b>'+ags.filter(a=>a.status==="concluido").length+'</b></div><div class="kpi"><span>Total gasto</span><b>'+brl(gasto)+'</b></div><div class="kpi"><span>Faltas</span><b>'+faltas+'</b></div></div>'+
     (c.nascimento?'<p class="note">Aniversário: '+fmtCurto(c.nascimento)+'</p>':'')+
-    (c.obs?'<div class="card" style="white-space:pre-wrap;margin-bottom:10px">'+esc(c.obs)+'</div>':'')+
-    '<h2 class="sec">Histórico</h2>'+(ags.length? '<div>'+ags.map(a=>'<div class="line"><div class="grow">'+esc(a.servicoNome||"")+'<small>'+fmtCurto(a.data)+' às '+esc(a.hora)+' · '+esc(profById(a.profId)?.nome||"")+'</small></div><span class="pill st-'+a.status+'">'+ST[a.status]+'</span></div>').join("")+'</div>' : '<p class="note">Nenhum horário ainda.</p>')+
+    '<h2 class="sec">Observações da cliente</h2>'+(c.obs?'<div class="card" style="white-space:pre-wrap;margin-bottom:10px">'+esc(c.obs)+'</div>':'<p class="note">Nenhuma anotação ainda. Toque em “Editar dados” pra escrever alergias, preferências e o que for importante.</p>')+
+    (futuros.length ? '<h2 class="sec">Próximos horários</h2><div class="hist">'+futuros.map(linhaHist).join("")+'</div>' : '')+
+    '<h2 class="sec">Histórico no estúdio</h2>'+(passados.length? '<div class="hist">'+passados.map(linhaHist).join("")+'</div>' : '<p class="note">Nenhum atendimento ainda.</p>')+
     '<div class="foot"><button id="fcEd">Editar dados</button><button id="fcX">Fechar</button><button class="btn-primary" id="fcAg">Marcar horário</button></div>', m => {
     m.querySelector("#fcX").onclick = closeModal;
     m.querySelector("#fcEd").onclick = () => formCliente(c);
