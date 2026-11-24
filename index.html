@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F6EFE3">
+<meta name="theme-color" content="#FBF7F2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Essence Glam">
+<meta name="apple-mobile-web-app-title" content="Lyslie Cruz">
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -15,42 +15,42 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<title>Essence Glam · Agenda</title>
+<title>Lyslie Cruz · Agenda</title>
 <meta name="color-scheme" content="light only">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: app de uma coluna, pensado pro celular; abas fixas embaixo, conteúdo rola acima.
-   Identidade do Stúdio Essence Glam: marfim, dourado em degradê, letras clássicas (Cinzel) como no logo.
+   Identidade Lyslie Cruz (24/11/2026): nude, rosé/bronze em degradê e letras clássicas (Cormorant), como o logo LC.
    Sempre claro, mesmo com o celular no modo noturno (pedido da Lyslie). */
 :root{
   color-scheme:light only;
-  --bg:#F6EFE3; --surface:#FFFCF5; --ink:#3A2915; --muted:#86704F; --line:#E7D9BF;
-  --accent:#8C6220; --accent-ink:#FFFFFF; --accent-soft:#F3E5C8;
-  --gold:linear-gradient(135deg,#C99A48 0%,#A57627 50%,#7E5617 100%);
-  --gold-text:linear-gradient(180deg,#D9B162 0%,#A9792A 55%,#7A5316 100%);
+  --bg:#FBF7F2; --surface:#FFFFFF; --ink:#33261F; --muted:#8E7C6F; --line:#E8DCCE;
+  --accent:#94664D; --accent-ink:#FFFFFF; --accent-soft:#F2E6DC;
+  --gold:linear-gradient(135deg,#D9B49A 0%,#B8876B 50%,#94664D 100%);
+  --gold-text:linear-gradient(180deg,#D9B49A 0%,#B8876B 55%,#8A5C44 100%);
   --ok:#3F7A4E; --ok-soft:#E4F0E2; --warn:#A35E12; --warn-soft:#FBEBD3; --bad:#A83A2E; --bad-soft:#F6E1DC;
   --info:#5A6E8C; --info-soft:#E8ECF2;
-  --f-display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --f-display:"Cormorant Garamond", Georgia, serif;
   --f-body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-num:"Figtree", system-ui, -apple-system, sans-serif;
   --r:14px;
 }
 html,body{height:100%}
-body{background:var(--bg) radial-gradient(120% 60% at 50% 0%,#FFF8EA 0%,transparent 70%) no-repeat;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body{background:var(--bg) radial-gradient(120% 60% at 50% 0%,#FFFFFF 0%,transparent 70%) no-repeat;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 *{box-sizing:border-box}
 .wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:12px 96px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:6px 14px;border-bottom:1px solid var(--line);margin-bottom:14px;position:relative}
-header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,#C99A48,transparent)}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,#C9A089,transparent)}
 .logo{display:flex;align-items:center;gap:12px;min-width:0}
-.mono{width:46px;height:46px;border-radius:50%;border:1.5px solid #B88A3C;box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 4px #E2C68C;display:flex;align-items:center;justify-content:center;flex:none;background:var(--surface)}
+.mono{width:46px;height:46px;border-radius:50%;border:1.5px solid #B8876B;box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 4px #E6CFBF;display:flex;align-items:center;justify-content:center;flex:none;background:var(--surface)}
 .mono b{font:600 19px var(--f-display);letter-spacing:-.04em;background:var(--gold-text);-webkit-background-clip:text;background-clip:text;color:transparent}
-.brand{font-family:var(--f-display);font-weight:600;font-size:22px;line-height:1.05;letter-spacing:.06em;text-wrap:balance;min-width:0}
+.brand{font-family:var(--f-display);font-weight:600;font-size:25px;line-height:1.05;letter-spacing:.06em;text-wrap:balance;min-width:0}
 .brand .pre{display:block;font:500 10.5px var(--f-display);letter-spacing:.42em;color:var(--muted);margin-bottom:3px}
 .brand .nm{background:var(--gold-text);-webkit-background-clip:text;background-clip:text;color:transparent}
 .brand small{display:block;font-family:var(--f-body);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .today{font-size:12.5px;color:var(--muted);text-align:right}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid #E2C68C;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid #E6CFBF;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
 nav.tabs .in{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:760px}
 nav.tabs button{background:none;border:0;padding:10px 4px 9px;font:600 12px var(--f-body);color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative}
 nav.tabs button svg{width:22px;height:22px}
@@ -132,13 +132,21 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:60
 .modal .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60;max-width:90%;text-align:center}
 .note{font-size:13px;color:var(--muted)}
+.avbox{background:var(--accent-soft);border:1px solid #E6CFBF;border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:grid;gap:8px}
+.avit{display:flex;gap:8px;align-items:center;background:var(--surface);border-radius:10px;padding:9px 10px;font-size:13.5px}
+.avit small{display:block;color:var(--muted);font-size:12px}
+.chk{flex-wrap:nowrap;align-items:flex-start}
+.chk input{margin-top:3px;flex:none}
+.secst{display:flex;align-items:center;gap:8px;font-weight:600}
+.secst i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.envit{border-top:1px solid var(--line);padding:8px 0;font-size:13px}
 .banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
 .ph{font:500 12px var(--f-num);color:var(--muted)}
 .svc{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .svc:last-child{border:0}
 .wa-num{font:500 12px var(--f-num);color:var(--muted);user-select:all}
 .reserva{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;justify-content:center;padding-inline:12px;pointer-events:none}
-.reserva .box{pointer-events:auto;width:100%;max-width:736px;max-height:58vh;overflow:auto;background:var(--surface);border:2px solid #B88A3C;border-radius:16px;box-shadow:0 -8px 30px rgba(0,0,0,.25);padding:14px}
+.reserva .box{pointer-events:auto;width:100%;max-width:736px;max-height:58vh;overflow:auto;background:var(--surface);border:2px solid #B8876B;border-radius:16px;box-shadow:0 -8px 30px rgba(0,0,0,.25);padding:14px}
 .reserva h3{font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.03em;color:var(--accent);margin:0 0 2px}
 .reserva .it{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;display:grid;gap:6px}
 .reserva .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -151,14 +159,14 @@ body.tem-reserva .wrap{padding-bottom:360px}
 /* fora do Claude não vem essa regra pronta: elemento com hidden some de verdade (login, toast, formulários) */
 [hidden]{display:none!important}
 /* tela de login (fora do Claude, cada uma entra com o próprio e-mail e senha) */
-.login{position:fixed;inset:0;z-index:80;background:var(--bg) radial-gradient(120% 70% at 50% 0%,#FFF8EA 0%,transparent 70%) no-repeat;display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
+.login{position:fixed;inset:0;z-index:80;background:var(--bg) radial-gradient(120% 70% at 50% 0%,#FFFFFF 0%,transparent 70%) no-repeat;display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
 .lgbox{width:100%;max-width:360px;display:grid;gap:12px;text-align:center}
 .lgmono{width:72px;height:72px;margin:0 auto 4px}
 .lgmono b{font-size:30px}
 .lgpre{font:500 12px var(--f-display);letter-spacing:.5em;color:var(--muted)}
 .lgnome{font:600 30px var(--f-display);letter-spacing:.06em;margin:0;background:var(--gold-text);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lgcid{font:500 11px var(--f-display);letter-spacing:.4em;color:var(--muted);margin-bottom:10px}
-.lgcid::before,.lgcid::after{content:"";display:inline-block;width:28px;height:1px;background:#C99A48;vertical-align:middle;margin:0 10px}
+.lgcid::before,.lgcid::after{content:"";display:inline-block;width:28px;height:1px;background:#C9A089;vertical-align:middle;margin:0 10px}
 .lgbox label.f{text-align:left}
 body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 
@@ -174,7 +182,7 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 .cal .cell.fora .ev{opacity:.45}
 .cal .cell.hoje .n{background:var(--gold);color:#fff}
 .cal .cell.sel{background:var(--accent-soft)}
-.cal .cell.sel:not(.hoje) .n{border:1.5px solid #B88A3C}
+.cal .cell.sel:not(.hoje) .n{border:1.5px solid #B8876B}
 .cal .ev{display:block;font:600 9.5px/1.25 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:clip;border-radius:3px;padding:1px 2px 1px 3px;border-left:2px solid var(--c,var(--accent));background:color-mix(in srgb,var(--c,#B0843A) 15%,transparent);color:var(--ink)}
 .cal .ev.ok{opacity:.55}
 .cal .ev.conf{font-weight:700}
@@ -202,7 +210,7 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 
 <div class="wrap">
   <header class="top">
-    <div class="logo"><span class="mono" aria-hidden="true"><b id="mono">EG</b></span><div class="brand" id="brand">Estúdio<small>Sobrancelha · Maquiagem · Cílios</small></div></div>
+    <div class="logo"><span class="mono" aria-hidden="true"><b id="mono">LC</b></span><div class="brand" id="brand">Estúdio<small>Sobrancelha · Maquiagem · Cílios</small></div></div>
     <div class="today" id="todayLbl"></div>
   </header>
   <div id="banner"></div>
@@ -220,9 +228,9 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 <div id="modalRoot"></div>
 <div id="login" class="login" hidden>
   <form id="lgForm" class="lgbox" autocomplete="on">
-    <span class="mono lgmono" aria-hidden="true"><b>EG</b></span>
-    <div class="lgpre">STÚDIO</div>
-    <h1 class="lgnome">ESSENCE GLAM</h1>
+    <span class="mono lgmono" aria-hidden="true"><b>LC</b></span>
+    <div class="lgpre">AGENDA</div>
+    <h1 class="lgnome">LYSLIE CRUZ</h1>
     <div class="lgcid">ARCOS-MG</div>
     <label class="f">E-mail<input id="lgEmail" type="email" autocomplete="username" inputmode="email" required></label>
     <label class="f">Senha<input id="lgSenha" type="password" autocomplete="current-password" required></label>
@@ -277,7 +285,7 @@ const S = {
   prof: "todas",
   mes: today().slice(0,7),
   busca: "",
-  cfg: null, clientes: [], ags: [], caixa: [], acomp: [], reservas: [],
+  cfg: null, clientes: [], ags: [], caixa: [], acomp: [], reservas: [], avisos: [], sec: {}, secRet: [], envios: null,
   pronto: {cfg:false, clientes:false, ags:false, caixa:false, acomp:false},
   db: null, canWrite: true
 };
@@ -500,6 +508,7 @@ function viewAgenda(v){
   const doDia = S.ags.filter(a => a.data === S.dia && doProf(a)).sort((a,b)=> a.hora.localeCompare(b.hora));
   const [y,mm] = S.dia.slice(0,7).split("-").map(Number);
   let html = '<div class="datebar"><button class="btn-sm" data-cm="-1" aria-label="Mês anterior">‹</button><div class="label">'+MES[mm-1]+' '+y+'</div><button class="btn-sm" data-cm="1" aria-label="Próximo mês">›</button></div>';
+  html += painelAvisos();
   html += painelConfirmar();
   html += '<div class="busca-ag"><input id="buscaAg" type="search" autocomplete="off" placeholder="🔍 Buscar cliente por nome ou número"><div id="buscaAgRes" class="achou" style="margin-top:6px"></div></div>';
   html += profChips();
@@ -519,6 +528,7 @@ function viewAgenda(v){
     if (total) html += '<p class="note" style="margin-top:10px">Recebido neste dia: <span class="money">'+brl(total)+'</span></p>';
   }
   v.innerHTML = html;
+  bindAvisos(v);
   v.querySelectorAll("[data-cm]").forEach(b => b.onclick = () => { const d = new Date(y, mm-1+Number(b.dataset.cm), 1); const alvo = d.getFullYear()+"-"+pad(d.getMonth()+1); S.dia = today().slice(0,7) === alvo ? today() : alvo+"-01"; render(); });
   v.querySelectorAll("[data-dia]").forEach(b => b.onclick = () => { const mudouMes = b.dataset.dia.slice(0,7) !== S.dia.slice(0,7); S.dia = b.dataset.dia; render(); if (!mudouMes) { const h = $(".dayhead"); if (h && h.getBoundingClientRect().top > innerHeight*0.6) h.scrollIntoView({behavior:"smooth", block:"start"}); } });
   bindProfChips(v);
@@ -817,6 +827,21 @@ function formConcluir(a){
     };
   });
 }
+/* ---------- avisos da secretária ---------- */
+function textoAviso(a){ const n = String(a.nome||"Cliente").split(" ")[0]; const sv = nomeMsg(a.servico||""); const q = (a.data ? fmtCurto(a.data) : "")+(a.hora ? " às "+a.hora : "");
+  if (a.tipo === "agendou") return "🔔 "+n+" agendou "+sv+" pelo site, "+q;
+  if (a.tipo === "cancelou") return "↩️ "+n+" desmarcou "+sv+" ("+q+") pelo WhatsApp. O horário foi liberado";
+  if (a.tipo === "conflito") return "⚠️ "+n+" tentou agendar "+sv+" "+q+", mas o horário já estava ocupado";
+  return "🔔 "+n; }
+function painelAvisos(){ const ls = S.avisos || []; if (!ls.length) return "";
+  return '<div class="avbox"><div class="row"><b class="grow">Avisos da secretária</b>'+(ls.length>1?'<button class="btn-sm btn-ghost" data-avtodos>Limpar todos</button>':'')+'</div>'+
+    ls.slice(0,8).map(a => '<div class="avit"><div class="grow">'+esc(textoAviso(a))+(a.tipo==="conflito"?'<small>A secretária mandou o link pra ela escolher outro horário.</small>':'')+'</div>'+
+      (a.agId && a.tipo !== "cancelou" ? '<button class="btn-sm" data-avver="'+esc(a.id)+'">Ver</button>' : '')+'<button class="btn-sm btn-ghost" data-avok="'+esc(a.id)+'" aria-label="Apagar aviso">Ok</button></div>').join("")+'</div>'; }
+function bindAvisos(v){
+  v.querySelectorAll("[data-avok]").forEach(b => b.onclick = () => run(()=>col("avisos").doc(b.dataset.avok).delete()));
+  v.querySelectorAll("[data-avver]").forEach(b => b.onclick = () => { const a = S.avisos.find(x => x.id === b.dataset.avver); if (!a) return; S.dia = a.data; S.mes = a.data.slice(0,7); render(); run(()=>col("avisos").doc(a.id).delete()); });
+  const t = v.querySelector("[data-avtodos]"); if (t) t.onclick = () => run(async () => { const b = S.db.batch(); S.avisos.forEach(a => b.delete(col("avisos").doc(a.id))); await b.commit(); }, "Avisos limpos");
+}
 /* ---------- depois de concluir: agendar o próximo agora ou a secretária chama a cliente em 15 dias (pedido da Lyslie, 24/11/2026) ---------- */
 const DIAS_CHAMADA = 15;
 function proximoPasso(a){
@@ -937,6 +962,8 @@ function viewRetornos(v){
   const itemProx = a => { const c = cliById(a.clienteId) || {}; const p = profById(a.profId)||{}; const ctx = ctxProx(a);
     const tpl = a.enviadas ? cfg().msgs.proxima2 : cfg().msgs.proxima;
     return '<div class="due'+(a.enviadas?" late":"")+'"><div class="row"><b class="grow">'+esc(c.nome||"Cliente removida")+'</b><span class="tag">próxima entre '+esc(ctx.de)+' e '+esc(ctx.ate)+'</span></div><div class="tag">'+(a.enviadas ? 'Chamada '+(a.enviadas>1?a.enviadas+" vezes":"em "+fmtCurto(a.enviadoEm))+' e ainda sem horário marcado' : 'Ainda não foi chamada pra marcar a próxima')+' · '+esc(a.servicoNome||"")+(p.nome?" · "+esc(p.nome):"")+'</div><div class="acts row">'+waBtn(c.telefone, fill(tpl, ctx), a.enviadas ? "Chamar de novo" : "Chamar pra próxima", "btn-sm", 'data-px="'+esc(a.id)+'" data-pxn="'+(a.enviadas||0)+'"')+'<button class="btn-sm" data-marcar="'+esc(a.clienteId)+'">Marcar horário</button><button class="btn-sm btn-ghost" data-ok="'+esc(a.id)+'">Não vai voltar</button></div></div>'; };
+  const chs = (S.secRet||[]).slice().sort((a,b)=>String(a.enviarEm).localeCompare(String(b.enviarEm)));
+  if (chs.length) html += '<h2 class="sec">A secretária vai chamar</h2><div class="list">'+chs.map(r => { const c = cliById(r.clienteId) || {}; return '<div class="due"><div class="row"><b class="grow">'+esc(c.nome||"Cliente")+'</b><span class="tag">dia '+esc(fmtCurto(r.enviarEm))+'</span></div><div class="tag">Retorno de '+esc(nomeMsg(r.servicoNome||""))+' · atendida em '+esc(fmtCurto(r.dataAtendimento))+'</div><div class="row"><button class="btn-sm btn-ghost" data-rcan="'+esc(r.id)+'">Não chamar</button></div></div>'; }).join("")+'</div>';
   html += '<h2 class="sec">Para hoje</h2>' + (vencidos.length ? '<div class="list">'+vencidos.map(item).join("")+'</div>' : '<div class="empty"><b>Tudo em dia</b>Quando um atendimento é concluído, o lembrete dos cuidados e da manutenção aparece aqui.</div>');
   if (proximos.length) html += '<h2 class="sec">Próximos 14 dias</h2><div class="list">'+proximos.map(item).join("")+'</div>';
   if (sumidas.length) html += '<h2 class="sec">Sumidas há mais de '+nSum+' dias</h2><div class="list">'+sumidas.map(x => '<div class="due"><div class="row"><b class="grow">'+esc(x.c.nome)+'</b><span class="tag">último: '+fmtCurto(x.ult.data)+'</span></div><div class="tag">'+esc(x.ult.servicoNome||"")+'</div><div class="row">'+waBtn(x.c.telefone, "Oi, "+x.c.nome.split(" ")[0]+"! Saudade de você por aqui. Quer marcar um horário?", "Chamar")+'<button class="btn-sm" data-marcar="'+esc(x.c.id)+'">Marcar horário</button></div></div>').join("")+'</div>';
@@ -944,6 +971,7 @@ function viewRetornos(v){
   bindProfChips(v);
   v.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => run(()=>col("acompanhamentos").doc(b.dataset.ok).update({feito:true, feitoEm: today()}), "Marcado como feito"));
   v.querySelectorAll("[data-px]").forEach(b => b.addEventListener("click", () => marcarEnvioProx(b.dataset.px, Number(b.dataset.pxn))));
+  v.querySelectorAll("[data-rcan]").forEach(b => b.onclick = () => run(()=>col("secretaria_retornos").doc(b.dataset.rcan).update({status:"cancelado", canceladoEm: new Date().toISOString()}), "Ok, a secretária não vai chamar."));
   v.querySelectorAll("[data-marcar]").forEach(b => b.onclick = () => { S.tab="agenda"; render(); formAg(null, b.dataset.marcar); });
 }
 
@@ -995,12 +1023,51 @@ function formLanc(tipo, l){
 
 /* ---------- AJUSTES ---------- */
 const MSGS = [["confirmacao","Confirmar horário (24h a 12h antes)"],["lembrete","Lembrete pra quem já confirmou"],["cuidados","Cuidados pós-atendimento"],["proxima","Chamar pra próxima (logo ao concluir)"],["proxima2","Chamar pra próxima de novo (quem não respondeu)"],["retorno","Chamar pra manutenção"]];
+const SEC_TIPOS = [["confirmacao","Confirmação quando agenda"],["lembrete","Lembrete na véspera (com sim/não e resposta automática)"],["retorno","Chamada de retorno (botão ao concluir)"],["conflito","Aviso quando o horário do site já estava ocupado"],["cuidados","Cuidados no dia seguinte ao atendimento"]];
+const SEC_TEXTOS = [["confirmacao","Confirmação do agendamento"],["lembrete","Lembrete da véspera"],["sim","Resposta quando ela diz \"sim\""],["nao","Resposta quando ela diz \"não\""],["retorno","Chamada de retorno"],["cuidados","Cuidados no dia seguinte"],["conflito","Horário já ocupado"]];
+const SEC_PADRAO = {
+  confirmacao:'Oii {nome}, seu horário de {servico} está marcado para {quando} às {hora}. 💗 Te espero na {endereco}. Qualquer mudança, é só me avisar por aqui.',
+  lembrete:'Oii {nome}, posso confirmar seu horário de {servico} {quando} às {hora}? É só me responder "sim" ou "não". 💗',
+  sim:'Perfeito, {nome}! Seu horário está confirmado. Te espero {quando} às {hora}, na {endereco}. 💗',
+  nao:'Tudo bem, {nome}! Vou liberar esse horário. Se quiser marcar outro dia, é só escolher aqui: {link} 💗',
+  retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
+  cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
+  conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
+function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
+  const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
+function blocoSecretaria(){ const x = S.sec || {}; const tp = x.tipos || {}; const tx = x.textos || {}; const teste = Array.isArray(x.teste) ? x.teste : [];
+  return '<h2 class="sec">Secretária no WhatsApp</h2><div class="card form" id="secCard">'+secStatus()+
+    '<label class="row chk"><input type="checkbox" id="sAtivo" style="width:auto"'+(x.ativo===false?'':' checked')+'> Secretária ligada</label>'+
+    '<label class="row chk"><input type="checkbox" id="sTeste" style="width:auto"'+(teste.length?' checked':'')+'> Modo teste: só estes números recebem</label>'+
+    '<label class="f">Números do teste (os 8 últimos dígitos, separados por vírgula)<input id="sTesteN" value="'+esc(teste.join(", "))+'"></label>'+
+    '<p class="note" style="margin:0">Desligando o modo teste, todas as clientes passam a receber.</p>'+
+    '<div class="f"><span>O que ela manda</span>'+SEC_TIPOS.map(([k,l])=>'<label class="row chk"><input type="checkbox" data-stipo="'+k+'" style="width:auto"'+((k==="cuidados" ? tp[k]===true : tp[k]!==false)?' checked':'')+'> '+l+'</label>').join("")+'</div>'+
+    '<div class="two"><label class="f">Manda mensagem a partir de<input type="time" id="sDe" value="'+esc((x.janela||[])[0]||"07:00")+'"></label><label class="f">até<input type="time" id="sAte" value="'+esc((x.janela||[])[1]||"23:00")+'"></label></div>'+
+    '<label class="f">Endereço (vai em {endereco})<input id="sEnd" value="'+esc(x.endereco||"")+'"></label>'+
+    '<label class="f">Link do catálogo (vai em {link})<input id="sLink" value="'+esc(x.linkSite||"")+'"></label>'+
+    '<p class="note">Nos textos, use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{quando}</span> (hoje, amanhã ou o dia) <span class="ph">{hora}</span> <span class="ph">{endereco}</span> <span class="ph">{link}</span>. Na chamada de retorno também <span class="ph">{data_atendimento}</span> <span class="ph">{janela}</span> <span class="ph">{manter}</span>; nos cuidados, <span class="ph">{cuidados}</span> (os cuidados cadastrados no serviço).</p>'+
+    SEC_TEXTOS.map(([k,l])=>'<label class="f">'+l+'<textarea data-stxt="'+k+'" style="min-height:96px">'+esc(tx[k]||SEC_PADRAO[k])+'</textarea></label>').join("")+
+    '<div class="row"><button class="btn-primary" id="sSalva">Salvar secretária</button><button id="sHist">Ver últimas mensagens</button></div><div id="sHistBox"></div></div>'; }
+function bindSecretaria(v){ const q = s => v.querySelector(s); if (!q("#secCard")) return;
+  q("#sSalva").onclick = () => { const tipos = {}; v.querySelectorAll("[data-stipo]").forEach(c => tipos[c.dataset.stipo] = c.checked);
+    const textos = {}; v.querySelectorAll("[data-stxt]").forEach(t => { const val = t.value.trim(); if (val && val !== SEC_PADRAO[t.dataset.stxt]) textos[t.dataset.stxt] = val; });
+    const teste = q("#sTeste").checked ? q("#sTesteN").value.split(",").map(x => x.replace(/\D/g,"").slice(-8)).filter(Boolean) : [];
+    if (q("#sTeste").checked && !teste.length){ toast("Coloque pelo menos um número no modo teste, ou desmarque."); return; }
+    run(()=>S.db.doc("config/secretaria").set({ativo: q("#sAtivo").checked, teste, tipos, textos, janela:[q("#sDe").value||"07:00", q("#sAte").value||"23:00"], endereco: q("#sEnd").value.trim(), linkSite: q("#sLink").value.trim()}, {merge:true}), "Secretária salva"); };
+  q("#sHist").onclick = async () => { const box = q("#sHistBox"); box.innerHTML = '<p class="note">Carregando…</p>';
+    try { const r = await S.db.collection("secretaria_envios").orderBy("enviadoEm","desc").limit(20).get();
+      const NOME = {confirmacao:"Confirmação", lembrete:"Lembrete", retorno:"Retorno", cuidados:"Cuidados", conflito:"Horário ocupado"};
+      box.innerHTML = r.empty ? '<p class="note">Nenhuma mensagem ainda.</p>' : r.docs.map(d => { const e = d.data(); const c = cliById(e.clienteId) || {}; const resp = e.resposta && e.resposta !== "n/a" ? (e.resposta==="sim"?"respondeu sim ✅":e.resposta==="nao"?"respondeu não ↩️":e.resposta==="sem-resposta"?"não respondeu":"respondeu: "+(e.respostaTexto||"")) : "";
+        return '<div class="envit"><b>'+esc(NOME[e.tipo]||e.tipo)+'</b> · '+esc(c.nome||"Cliente")+' · '+esc(new Date(e.enviadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}))+(resp?'<br><span class="tag">'+esc(resp)+'</span>':'')+'</div>'; }).join("");
+    } catch(e){ box.innerHTML = '<p class="note">Não deu pra carregar agora.</p>'; } };
+}
 function viewAjustes(v){
   const c = cfg();
-  let html = '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
+  let html = blocoSecretaria() + '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
   html += '<h2 class="sec">Profissionais</h2><div class="card">'+(c.profissionais.length? c.profissionais.map(p=>'<div class="line"><span class="sw" style="background:'+esc(p.cor)+'"></span><div class="grow">'+esc(p.nome)+'<small>'+esc(p.area||"")+'</small></div><button class="btn-sm" data-pe="'+esc(p.id)+'">Editar</button></div>').join("") : '<p class="note">Cadastre quem atende no estúdio.</p>')+'<button style="margin-top:10px" id="aNovaP">+ Profissional</button></div>';
   html += '<h2 class="sec">Serviços e preços</h2><div class="card">'+(c.servicos.length? c.servicos.map(s=>'<div class="svc"><div style="min-width:0"><b>'+esc(s.nome)+'</b><div class="tag">'+(s.divisao?.length ? 'Combo · '+s.divisao.map(d=>esc(profById(d.profId)?.nome||"")+' '+brl(d.valor)).join(" + ") : esc(profById(s.profId)?.nome||"Qualquer profissional"))+(s.duracao?" · "+esc(s.duracao)+" min":"")+(s.retornoDias?" · manutenção em "+esc(s.retornoDias)+" dias":"")+'</div></div><div style="text-align:right"><span class="money">'+(s.preco!=null? brl(s.preco) : '<span style="color:var(--warn)">sem preço</span>')+'</span><br><button class="btn-sm btn-ghost" data-se="'+esc(s.id)+'">Editar</button></div></div>').join("") : '<p class="note">Cadastre os serviços com preço, duração e prazo de manutenção.</p>')+'<button style="margin-top:10px" id="aNovoS">+ Serviço</button></div>';
-  html += '<h2 class="sec">Mensagens do WhatsApp</h2><div class="card form"><p class="note">Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span>. <span class="ph">{quando}</span> (hoje, amanhã ou o dia). Na “próxima”, também <span class="ph">{de}</span> e <span class="ph">{ate}</span> (as datas da janela) e <span class="ph">{janela}</span> (a frase da janela; nos cílios vira “já deixa sua manutenção garantida:”). <span class="ph">{precos}</span> põe as datas e os valores da manutenção dos cílios daquele tipo (até o dia X paga o valor de 20 dias; do dia Y ao dia Z, o de 30), contados do dia do atendimento. Em serviço sem manutenção, a linha some. O app troca pelos dados da cliente.</p>'+
+  html += '<h2 class="sec">Mensagens dos botões de WhatsApp (você manda)</h2><div class="card form"><p class="note">Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span>. <span class="ph">{quando}</span> (hoje, amanhã ou o dia). Na “próxima”, também <span class="ph">{de}</span> e <span class="ph">{ate}</span> (as datas da janela) e <span class="ph">{janela}</span> (a frase da janela; nos cílios vira “já deixa sua manutenção garantida:”). <span class="ph">{precos}</span> põe as datas e os valores da manutenção dos cílios daquele tipo (até o dia X paga o valor de 20 dias; do dia Y ao dia Z, o de 30), contados do dia do atendimento. Em serviço sem manutenção, a linha some. O app troca pelos dados da cliente.</p>'+
     MSGS.map(([k,l])=>'<label class="f">'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
     '<div class="two"><label class="f">Próxima visita: a partir de quantos dias?<input id="aPxDe" inputmode="numeric" value="'+esc(janDe())+'"></label><label class="f">Até quantos dias?<input id="aPxAte" inputmode="numeric" value="'+esc(janAte())+'"></label></div>'+
     '<label class="f">Serviços que NÃO chamam pra próxima (separe com |)<input id="aSemPx" value="'+esc(c.semProxima||"maquiagem|penteado|babyliss")+'"></label>'+
@@ -1009,6 +1076,7 @@ function viewAjustes(v){
   html += '<h2 class="sec">Caixa e retornos</h2><div class="card form"><p class="note">Um item por linha.</p><label class="f">Formas de pagamento<textarea id="aFormas">'+esc(formas().join("\n"))+'</textarea></label><div class="two"><label class="f">Categorias de entrada<textarea id="aCatE">'+esc(catsEntrada().join("\n"))+'</textarea></label><label class="f">Categorias de saída<textarea id="aCatS">'+esc(catsSaida().join("\n"))+'</textarea></label></div><label class="f">Considerar cliente sumida depois de quantos dias sem vir?<input id="aSum" inputmode="numeric" value="'+esc(c.diasSumida||45)+'"></label><div class="two"><label class="f">Reserva do studio (% do faturamento do dia)<input id="aResPct" inputmode="decimal" value="'+esc(String(resPct()).replace(".",","))+'"></label><label class="f">Horário do fechamento do dia<input id="aResHora" type="time" value="'+esc(resHora())+'"></label></div><p class="note" style="margin:6px 0 0">Taxa de cada forma de pagamento. O caixa lança o valor já descontado.</p>'+formas().map((f,i)=>{ const t = taxaDe(f); return '<div class="two" style="align-items:end"><label class="f">'+esc(f)+' (taxa %)<input data-tx="'+i+'" inputmode="decimal" value="'+esc(String(t.pct||0).replace(".",","))+'"></label><label class="row" style="padding-bottom:10px"><input type="checkbox" data-tdu="'+i+'" style="width:auto"'+(t.proxDiaUtil?" checked":"")+'> Cai no próximo dia útil</label></div>'; }).join("")+'<button class="btn-primary" id="aSalvaCx" style="justify-self:start">Salvar</button></div>';
   html += '<h2 class="sec">Conta e cópia dos dados</h2><div class="card form"><p class="note" style="margin:0">Entrou como <b>'+esc(S.user?.email||"")+'</b>.</p><div class="row"><button id="aCopia">Baixar cópia dos dados</button><button class="btn-danger" id="aSair">Sair da conta</button></div><p class="note" style="margin:0">Guarde uma cópia de vez em quando, no celular ou no Google Drive. O plano gratuito não faz backup sozinho.</p></div>';
   v.innerHTML = html;
+  bindSecretaria(v);
   v.querySelector("#aCopia").onclick = baixarCopia;
   v.querySelector("#aSair").onclick = () => confirmar("Sair da conta neste aparelho?", "Sair", async () => { await window.__sair(); });
   const linhas = id => v.querySelector(id).value.split("\n").map(x=>x.trim()).filter(Boolean);
@@ -1140,6 +1208,12 @@ render();
     unsub.push(db.collection("agendamentos").orderBy("data","desc").limit(1000).onSnapshot(q => { S.ags = q.docs.map(d => ({id:d.id, ...d.data()})); render(); }, fail));
     unsub.push(db.collection("caixa").orderBy("data","desc").limit(1000).onSnapshot(q => { S.caixa = q.docs.map(d => ({id:d.id, ...d.data(), valor: Number(d.data().valor)||0})); S.pronto.caixa = true; render(); }, fail));
     unsub.push(db.collection("acompanhamentos").where("feito","==",false).onSnapshot(q => { S.acomp = q.docs.map(d => ({id:d.id, ...d.data()})); render(); }, fail));
+    /* secretária: avisos (agendou pelo site, desmarcou, horário ocupado), ajustes e chamadas de retorno */
+    let avIni = true;
+    unsub.push(db.collection("avisos").orderBy("criadoEm","desc").limit(30).onSnapshot(q => { const ls = q.docs.map(d => ({id:d.id, ...d.data()}));
+      if (!avIni){ const novos = ls.filter(a => !S.avisos.some(b => b.id === a.id)); if (novos.length) toast(textoAviso(novos[0])); } avIni = false; S.avisos = ls; render(); }, fail));
+    unsub.push(db.doc("config/secretaria").onSnapshot(x => { S.sec = x.exists ? x.data() : {}; if (S.tab !== "ajustes") render(); }, fail));
+    unsub.push(db.collection("secretaria_retornos").where("status","==","agendado").onSnapshot(q => { S.secRet = q.docs.map(d => ({id:d.id, ...d.data()})); render(); }, fail));
     unsub.push(db.collection("reservas").orderBy("data","desc").limit(1000).onSnapshot(q => { S.reservas = q.docs.map(d => ({id:d.id, ...d.data()})); S.pronto.reservas = true; render(); }, fail));
   });
 })();

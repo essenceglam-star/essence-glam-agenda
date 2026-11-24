@@ -1,13 +1,21 @@
 {
-  "name": "Stúdio Essence Glam · Agenda",
-  "short_name": "Essence Glam",
+  "name": "Lyslie Cruz · Agenda",
+  "short_name": "Lyslie Cruz",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F6EFE3",
-  "theme_color": "#F6EFE3",
+  "background_color": "#FBF7F2",
+  "theme_color": "#FBF7F2",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
