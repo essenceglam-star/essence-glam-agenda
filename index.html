@@ -220,7 +220,7 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 <nav class="tabs" aria-label="Seções"><div class="in">
   <button data-tab="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</button>
   <button data-tab="clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Clientes</button>
-  <button data-tab="retornos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg>Retornos<span class="dot" id="dueDot" hidden></span></button>
+  <button data-tab="retornos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg>Notificações<span class="dot" id="dueDot" hidden></span></button>
   <button data-tab="caixa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>Caixa</button>
   <button data-tab="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
 </div></nav>
@@ -449,7 +449,7 @@ function render(){
   $("#mono").textContent = iniciais(nm);
   $("#brand").innerHTML = (pre ? '<span class="pre">'+esc(pre[1].toUpperCase())+'</span>' : '') + '<span class="nm">'+esc(nm.toUpperCase())+'</span>' + "<small>" + esc(cfg().profissionais.map(p=>p.area||p.nome).filter(Boolean).join(" · ") || "Sobrancelha · Maquiagem · Cílios") + "</small>";
   $("#todayLbl").textContent = fmtDia(today());
-  const pend = S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length;
+  const pend = S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length + (S.avisos||[]).length;
   const dot = $("#dueDot"); dot.hidden = !pend; dot.textContent = pend;
   const v = $("#view");
   if (!S.db && S.dbChecked){ v.innerHTML = '<div class="empty"><b>Não deu pra carregar</b>Confira a internet e recarregue a página.</div>'; return; }
@@ -508,7 +508,6 @@ function viewAgenda(v){
   const doDia = S.ags.filter(a => a.data === S.dia && doProf(a)).sort((a,b)=> a.hora.localeCompare(b.hora));
   const [y,mm] = S.dia.slice(0,7).split("-").map(Number);
   let html = '<div class="datebar"><button class="btn-sm" data-cm="-1" aria-label="Mês anterior">‹</button><div class="label">'+MES[mm-1]+' '+y+'</div><button class="btn-sm" data-cm="1" aria-label="Próximo mês">›</button></div>';
-  html += painelAvisos();
   html += painelConfirmar();
   html += '<div class="busca-ag"><input id="buscaAg" type="search" autocomplete="off" placeholder="🔍 Buscar cliente por nome ou número"><div id="buscaAgRes" class="achou" style="margin-top:6px"></div></div>';
   html += profChips();
@@ -528,7 +527,6 @@ function viewAgenda(v){
     if (total) html += '<p class="note" style="margin-top:10px">Recebido neste dia: <span class="money">'+brl(total)+'</span></p>';
   }
   v.innerHTML = html;
-  bindAvisos(v);
   v.querySelectorAll("[data-cm]").forEach(b => b.onclick = () => { const d = new Date(y, mm-1+Number(b.dataset.cm), 1); const alvo = d.getFullYear()+"-"+pad(d.getMonth()+1); S.dia = today().slice(0,7) === alvo ? today() : alvo+"-01"; render(); });
   v.querySelectorAll("[data-dia]").forEach(b => b.onclick = () => { const mudouMes = b.dataset.dia.slice(0,7) !== S.dia.slice(0,7); S.dia = b.dataset.dia; render(); if (!mudouMes) { const h = $(".dayhead"); if (h && h.getBoundingClientRect().top > innerHeight*0.6) h.scrollIntoView({behavior:"smooth", block:"start"}); } });
   bindProfChips(v);
@@ -834,12 +832,12 @@ function textoAviso(a){ const n = String(a.nome||"Cliente").split(" ")[0]; const
   if (a.tipo === "conflito") return "⚠️ "+n+" tentou agendar "+sv+" "+q+", mas o horário já estava ocupado";
   return "🔔 "+n; }
 function painelAvisos(){ const ls = S.avisos || []; if (!ls.length) return "";
-  return '<div class="avbox"><div class="row"><b class="grow">Avisos da secretária</b>'+(ls.length>1?'<button class="btn-sm btn-ghost" data-avtodos>Limpar todos</button>':'')+'</div>'+
-    ls.slice(0,8).map(a => '<div class="avit"><div class="grow">'+esc(textoAviso(a))+(a.tipo==="conflito"?'<small>A secretária mandou o link pra ela escolher outro horário.</small>':'')+'</div>'+
-      (a.agId && a.tipo !== "cancelou" ? '<button class="btn-sm" data-avver="'+esc(a.id)+'">Ver</button>' : '')+'<button class="btn-sm btn-ghost" data-avok="'+esc(a.id)+'" aria-label="Apagar aviso">Ok</button></div>').join("")+'</div>'; }
+  return '<div class="avbox"><div class="row"><b class="grow">Avisos</b>'+(ls.length>1?'<button class="btn-sm btn-ghost" data-avtodos>Limpar todos</button>':'')+'</div>'+
+    ls.slice(0,8).map(a => '<div class="avit"><div class="grow">'+esc(textoAviso(a))+(a.tipo==="conflito"?'<small>Chame ela pra escolher outro horário.</small>':'')+'</div>'+
+      (a.agId && a.tipo !== "cancelou" ? '<button class="btn-sm" data-avver="'+esc(a.id)+'">Ver</button>' : '')+(a.tipo === "conflito" && a.telefone ? waBtn(a.telefone, "Oii "+String(a.nome||"").split(" ")[0]+", o horário que você escolheu acabou de ser reservado. Qual outro dia e horário ficam bons pra você? 💗", "Chamar", "btn-sm") : '')+'<button class="btn-sm btn-ghost" data-avok="'+esc(a.id)+'" aria-label="Apagar aviso">Ok</button></div>').join("")+'</div>'; }
 function bindAvisos(v){
   v.querySelectorAll("[data-avok]").forEach(b => b.onclick = () => run(()=>col("avisos").doc(b.dataset.avok).delete()));
-  v.querySelectorAll("[data-avver]").forEach(b => b.onclick = () => { const a = S.avisos.find(x => x.id === b.dataset.avver); if (!a) return; S.dia = a.data; S.mes = a.data.slice(0,7); render(); run(()=>col("avisos").doc(a.id).delete()); });
+  v.querySelectorAll("[data-avver]").forEach(b => b.onclick = () => { const a = S.avisos.find(x => x.id === b.dataset.avver); if (!a) return; S.tab = "agenda"; S.dia = a.data; S.mes = a.data.slice(0,7); document.querySelectorAll("nav.tabs button").forEach(t => t.setAttribute("aria-current", t.dataset.tab === "agenda" ? "page" : "false")); render(); run(()=>col("avisos").doc(a.id).delete()); });
   const t = v.querySelector("[data-avtodos]"); if (t) t.onclick = () => run(async () => { const b = S.db.batch(); S.avisos.forEach(a => b.delete(col("avisos").doc(a.id))); await b.commit(); }, "Avisos limpos");
 }
 /* ---------- depois de concluir: agendar o próximo agora ou a secretária chama a cliente em 15 dias (pedido da Lyslie, 24/11/2026) ---------- */
@@ -880,7 +878,7 @@ async function proporProxima(a){
   const msg = fill(cfg().msgs.proxima, ctxProx(doc));
   modal('<h3>Chamar '+esc(primeiroNome(c)||"a cliente")+' pra próxima</h3><p class="note">Ela acabou de sair. É a melhor hora pra deixar a próxima marcada, entre '+esc(ctxProx(doc).de)+' e '+esc(ctxProx(doc).ate)+'. Pode ajustar o texto antes de mandar.</p>'+
     '<textarea id="pxMsg" style="min-height:120px">'+esc(msg)+'</textarea><div class="foot"><button id="pxDepois">Depois</button>'+(waLink(c.telefone,"x") ? '<a class="btn btn-wa" id="pxWa" target="_blank" rel="noopener" href="'+esc(waLink(c.telefone, msg))+'">'+WA+'Mandar no WhatsApp</a>' : '<span class="tag">Ela está sem telefone cadastrado</span>')+'</div>'+
-    '<p class="note" style="margin-top:10px">Se não mandar agora, ela fica na aba Retornos até ter o próximo horário marcado.</p>', m => {
+    '<p class="note" style="margin-top:10px">Se não mandar agora, ela fica na aba Notificações até ter o próximo horário marcado.</p>', m => {
     const ta = m.querySelector("#pxMsg"); const wa = m.querySelector("#pxWa");
     if (wa){ ta.oninput = () => { wa.href = waLink(c.telefone, ta.value); }; wa.addEventListener("click", () => { closeModal(); marcarEnvioProx("prox-"+a.id, 0); }); }
     m.querySelector("#pxDepois").onclick = closeModal;
@@ -958,7 +956,7 @@ function viewRetornos(v){
   const item = a => { if (a.tipo === "proxima") return itemProx(a); const c = cliById(a.clienteId) || {}; const p = profById(a.profId)||{}; const tpl = a.tipo==="cuidados" ? cfg().msgs.cuidados : cfg().msgs.retorno; const s = svcById(a.servicoId)||{};
     const msg = fill(tpl, {nome:(c.nome||"").split(" ")[0], servico:nomeMsg(a.servicoNome||s.nome), prof:p.nome||"", estudio:cfg().estudio, cuidados:s.cuidados||"", data:"", hora:"", precos: precosManut(a.servicoNome||s.nome, S.ags.find(x=>x.id===a.agendamentoId)?.data || (a.tipo==="retorno" && s.retornoDias ? addDays(a.data, -Number(s.retornoDias)) : null))});
     return '<div class="due'+(a.data<hoje?" late":"")+'"><div class="row"><b class="grow">'+esc(c.nome||"Cliente removida")+'</b><span class="tag">'+(a.data<hoje? "desde "+fmtCurto(a.data) : a.data===hoje? "hoje" : fmtCurto(a.data))+'</span></div><div class="tag">'+(a.tipo==="cuidados"?"Mandar cuidados pós-atendimento":"Chamar pra manutenção")+' · '+esc(a.servicoNome||"")+(p.nome?" · "+esc(p.nome):"")+'</div><div class="acts row">'+waBtn(c.telefone, msg, a.tipo==="cuidados"?"Mandar cuidados":"Chamar no WhatsApp")+'<button class="btn-sm" data-ok="'+esc(a.id)+'">Feito</button>'+(a.tipo==="retorno"?'<button class="btn-sm" data-marcar="'+esc(a.clienteId)+'">Marcar horário</button>':'')+'</div></div>'; };
-  let html = profChips();
+  let html = painelAvisos() + profChips();
   const itemProx = a => { const c = cliById(a.clienteId) || {}; const p = profById(a.profId)||{}; const ctx = ctxProx(a);
     const tpl = a.enviadas ? cfg().msgs.proxima2 : cfg().msgs.proxima;
     return '<div class="due'+(a.enviadas?" late":"")+'"><div class="row"><b class="grow">'+esc(c.nome||"Cliente removida")+'</b><span class="tag">próxima entre '+esc(ctx.de)+' e '+esc(ctx.ate)+'</span></div><div class="tag">'+(a.enviadas ? 'Chamada '+(a.enviadas>1?a.enviadas+" vezes":"em "+fmtCurto(a.enviadoEm))+' e ainda sem horário marcado' : 'Ainda não foi chamada pra marcar a próxima')+' · '+esc(a.servicoNome||"")+(p.nome?" · "+esc(p.nome):"")+'</div><div class="acts row">'+waBtn(c.telefone, fill(tpl, ctx), a.enviadas ? "Chamar de novo" : "Chamar pra próxima", "btn-sm", 'data-px="'+esc(a.id)+'" data-pxn="'+(a.enviadas||0)+'"')+'<button class="btn-sm" data-marcar="'+esc(a.clienteId)+'">Marcar horário</button><button class="btn-sm btn-ghost" data-ok="'+esc(a.id)+'">Não vai voltar</button></div></div>'; };
@@ -971,6 +969,7 @@ function viewRetornos(v){
   bindProfChips(v);
   v.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => run(()=>col("acompanhamentos").doc(b.dataset.ok).update({feito:true, feitoEm: today()}), "Marcado como feito"));
   v.querySelectorAll("[data-px]").forEach(b => b.addEventListener("click", () => marcarEnvioProx(b.dataset.px, Number(b.dataset.pxn))));
+  bindAvisos(v);
   v.querySelectorAll("[data-rcan]").forEach(b => b.onclick = () => run(()=>col("secretaria_retornos").doc(b.dataset.rcan).update({status:"cancelado", canceladoEm: new Date().toISOString()}), "Ok, a secretária não vai chamar."));
   v.querySelectorAll("[data-marcar]").forEach(b => b.onclick = () => { S.tab="agenda"; render(); formAg(null, b.dataset.marcar); });
 }
@@ -1023,8 +1022,8 @@ function formLanc(tipo, l){
 
 /* ---------- AJUSTES ---------- */
 const MSGS = [["confirmacao","Confirmar horário (24h a 12h antes)"],["lembrete","Lembrete pra quem já confirmou"],["cuidados","Cuidados pós-atendimento"],["proxima","Chamar pra próxima (logo ao concluir)"],["proxima2","Chamar pra próxima de novo (quem não respondeu)"],["retorno","Chamar pra manutenção"]];
-const SEC_TIPOS = [["confirmacao","Confirmação quando agenda"],["lembrete","Lembrete na véspera (com sim/não e resposta automática)"],["retorno","Chamada de retorno (botão ao concluir)"],["conflito","Aviso quando o horário do site já estava ocupado"],["cuidados","Cuidados logo depois de concluir o atendimento"]];
-const SEC_TEXTOS = [["confirmacao","Confirmação do agendamento"],["lembrete","Lembrete da véspera"],["sim","Resposta quando ela diz \"sim\""],["nao","Resposta quando ela diz \"não\""],["retorno","Chamada de retorno"],["cuidados","Cuidados (logo depois de concluir)"],["conflito","Horário já ocupado"]];
+const SEC_TIPOS = [["confirmacao","Confirmação quando agenda"],["lembrete","Lembrete na véspera (com sim/não e resposta automática)"],["retorno","Chamada de retorno (botão ao concluir)"],["cuidados","Cuidados logo depois de concluir o atendimento"]];
+const SEC_TEXTOS = [["confirmacao","Confirmação do agendamento"],["lembrete","Lembrete da véspera"],["sim","Resposta quando ela diz \"sim\""],["nao","Resposta quando ela diz \"não\""],["retorno","Chamada de retorno"],["cuidados","Cuidados (logo depois de concluir)"]];
 const SEC_PADRAO = {
   confirmacao:'Oii {nome}, seu horário de {servico} está marcado para {quando} às {hora}. 💗 Te espero na {endereco}. Qualquer mudança, é só me avisar por aqui.',
   lembrete:'Oii {nome}, posso confirmar seu horário de {servico} {quando} às {hora}? É só me responder "sim" ou "não". 💗',
@@ -1033,7 +1032,7 @@ const SEC_PADRAO = {
   retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
   cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
   conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
-const VERSAO_APP = "24/11 · 13h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
+const VERSAO_APP = "24/11 · 14h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
 function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
   const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
