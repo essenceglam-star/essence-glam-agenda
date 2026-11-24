@@ -642,10 +642,11 @@ function partesDe(ids, pidPadrao, extra, pidExtra){
   if (!m.size) m.set(pidPadrao, 0);
   return [...m].map(([profId, valor]) => ({profId, valor}));
 }
-function formAg(a, cliPre){
-  const ed = !!a; a = a || {data:S.dia, hora:"", profId: S.prof!=="todas"? S.prof : (cfg().profissionais[0]?.id||""), clienteId: cliPre||"", servicoId:"", valor:null, obs:""};
+function formAg(a, cliPre, svcPre, diaPre){
+  const ed = !!a; a = a || {data:diaPre||S.dia, hora:"", profId: S.prof!=="todas"? S.prof : (cfg().profissionais[0]?.id||""), clienteId: cliPre||"", servicoId:"", valor:null, obs:""};
   const ps = cfg().profissionais;
   let sel = svcsDoAg(a).map(x => x.id).filter(Boolean);
+  if (!ed && svcPre && svcPre.length) sel = svcPre.filter(id => svcById(id));
   const dm = a.domicilio || {};
   modal('<h3>'+(ed?"Editar agendamento":"Novo agendamento")+'</h3><form class="form" id="fAg">'+
     '<label class="f">Cliente<input id="agBusca" type="search" autocomplete="off" placeholder="Digite o nome ou o WhatsApp da cliente"></label><div id="agAchou" class="achou"></div>'+
@@ -812,8 +813,28 @@ function formConcluir(a){
       if (querCuid) await run(()=>col("acompanhamentos").doc("cuid-"+a.id).set({...base, tipo:"cuidados", data: addDays(a.data,1)}));
       if (querRet) for (let i=0;i<rets.length;i++){ const r = rets[i]; await run(()=>col("acompanhamentos").doc(rets.length>1 ? "ret-"+a.id+"-"+i : "ret-"+a.id).set({...base, profId:r.profId, servicoId:r.servicoId, servicoNome:r.nome, tipo:"retorno", data: addDays(a.data, r.dias)})); }
       toast("Atendimento concluído e lançado no caixa");
-      if (svcsDoAg(a).some(x => chamaProxima(x.nome||svcById(x.id)?.nome||""))) await proporProxima(a);
+      proximoPasso(a);
     };
+  });
+}
+/* ---------- depois de concluir: agendar o próximo agora ou a secretária chama a cliente em 15 dias (pedido da Lyslie, 24/11/2026) ---------- */
+const DIAS_CHAMADA = 15;
+function proximoPasso(a){
+  const c = cliById(a.clienteId) || {}; const nome = primeiroNome(c) || "a cliente";
+  const svcs = svcsDoAg(a).map(x => x.id).filter(Boolean);
+  const nomes = svcsDoAg(a).map(x => x.nome || svcById(x.id)?.nome || "");
+  const podeChamar = nomes.some(n => chamaProxima(n)) && !!c.telefone;
+  const quando = addDays(a.data, DIAS_CHAMADA);
+  modal('<h3>E o próximo horário de '+esc(nome)+'?</h3><p class="note">'+esc(a.servicoNome||"")+'</p>'+
+    '<div class="form"><button class="btn-primary" id="ppAg">Agendar novo horário</button>'+
+    (podeChamar ? '<button id="ppCh">Chamar para retorno daqui '+DIAS_CHAMADA+' dias</button><p class="note" style="margin:0">A secretária manda a mensagem sozinha no dia '+esc(fmtCurto(quando))+', com o link dos horários livres. Se ela marcar antes, a mensagem não sai.</p>' : '')+
+    '<button class="btn-ghost" id="ppX">Agora não</button></div>', m => {
+    m.querySelector("#ppX").onclick = closeModal;
+    m.querySelector("#ppAg").onclick = () => { closeModal(); formAg(null, a.clienteId, svcs, addDays(a.data, DIAS_CHAMADA)); };
+    const ch = m.querySelector("#ppCh");
+    if (ch) ch.onclick = async () => { closeModal();
+      await run(()=>col("secretaria_retornos").doc("ret-"+a.id).set({clienteId:a.clienteId, agendamentoId:a.id, servicoId:a.servicoId||"", servicoNome:a.servicoNome||"", dataAtendimento:a.data, enviarEm: quando, de: Number(cfg().proxDe)||20, ate: Number(cfg().proxAte)||30, status:"agendado", criadoEm: new Date().toISOString()}),
+        "Combinado! A secretária chama "+nome+" no dia "+fmtCurto(quando)+"."); };
   });
 }
 /* ---------- próxima visita: ao concluir, já chama a cliente pra marcar a próxima (manutenção, retorno da brow, design) ---------- */
