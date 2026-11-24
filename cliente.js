@@ -10,5 +10,6 @@ window.CLIENTE = {
     messagingSenderId: "363415024268",
     appId: "1:363415024268:web:d104449d1df9a6b9f501a9"
   },
+  anamnese: "brow", /* perguntas da anamnese voltadas pra Brow Lamination */
   tema: {} /* cores padrão do index.html (nude e rosé) */
 };
