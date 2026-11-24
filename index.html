@@ -801,7 +801,7 @@ function formConcluir(a){
     '<div class="two"><label class="f">'+(jaPago>0?"Valor recebido hoje (R$)":"Valor recebido (R$)")+'<input id="cValor" inputmode="decimal" value="'+(resta!=null?String(jaPago>0?resta:a.valor).replace(".",","):"")+'" required></label>'+
     '<label class="f">Forma de pagamento<select id="cForma">'+formas().map(f=>'<option>'+esc(f)+'</option>').join("")+'</select></label></div>'+
     '<p class="note" id="cLiq"></p>'+
-    '<label class="row"><input type="checkbox" id="cCuid" checked style="width:auto"> Lembrar de mandar os cuidados amanhã</label>'+
+    '<label class="row"><input type="checkbox" id="cCuid" checked style="width:auto"> Mandar os cuidados agora</label>'+
     (a.divisao?.length ? '<p class="note">Combo: o valor recebido é dividido no caixa assim: '+a.divisao.map(d=>esc(profById(d.profId)?.nome||"")+' '+brl(d.valor)).join(" + ")+' (proporcional, se o valor mudar).</p>' : '')+
     (rets.length ? '<label class="row"><input type="checkbox" id="cRet" checked style="width:auto"> Criar lembretes de retorno: '+rets.map(r=>esc(r.nome)+' em '+esc(r.dias)+' dias ('+fmtCurto(addDays(a.data, r.dias))+')').join("; ")+'</label>' : '<p class="note">'+(svcsDoAg(a).length>1?"Esses serviços não têm":"Este serviço não tem")+' prazo de manutenção. Dá pra definir em Ajustes.</p>')+
     '<div class="foot"><button type="button" id="cX">Voltar</button><button class="btn-primary">Concluir</button></div></form>', m => {
@@ -820,7 +820,7 @@ function formConcluir(a){
       const desc = (c.nome||"Cliente")+" · "+(a.servicoNome||s.nome||"")+(jaPago>0?" (restante)":"");
       await lancarEntrada(a, valor, forma, a.data, "ag-"+a.id, desc, "Atendimento");
       const base = {clienteId:a.clienteId, agendamentoId:a.id, profId:a.profId, servicoId:a.servicoId, servicoNome:a.servicoNome||s.nome||"", feito:false};
-      if (querCuid) await run(()=>col("acompanhamentos").doc("cuid-"+a.id).set({...base, tipo:"cuidados", data: addDays(a.data,1)}));
+      if (querCuid) await run(()=>col("acompanhamentos").doc("cuid-"+a.id).set({...base, tipo:"cuidados", data: today()})); /* a secretária manda logo depois de concluir (pedido da Lyslie, 24/11) */
       if (querRet) for (let i=0;i<rets.length;i++){ const r = rets[i]; await run(()=>col("acompanhamentos").doc(rets.length>1 ? "ret-"+a.id+"-"+i : "ret-"+a.id).set({...base, profId:r.profId, servicoId:r.servicoId, servicoNome:r.nome, tipo:"retorno", data: addDays(a.data, r.dias)})); }
       toast("Atendimento concluído e lançado no caixa");
       proximoPasso(a);
@@ -1023,8 +1023,8 @@ function formLanc(tipo, l){
 
 /* ---------- AJUSTES ---------- */
 const MSGS = [["confirmacao","Confirmar horário (24h a 12h antes)"],["lembrete","Lembrete pra quem já confirmou"],["cuidados","Cuidados pós-atendimento"],["proxima","Chamar pra próxima (logo ao concluir)"],["proxima2","Chamar pra próxima de novo (quem não respondeu)"],["retorno","Chamar pra manutenção"]];
-const SEC_TIPOS = [["confirmacao","Confirmação quando agenda"],["lembrete","Lembrete na véspera (com sim/não e resposta automática)"],["retorno","Chamada de retorno (botão ao concluir)"],["conflito","Aviso quando o horário do site já estava ocupado"],["cuidados","Cuidados no dia seguinte ao atendimento"]];
-const SEC_TEXTOS = [["confirmacao","Confirmação do agendamento"],["lembrete","Lembrete da véspera"],["sim","Resposta quando ela diz \"sim\""],["nao","Resposta quando ela diz \"não\""],["retorno","Chamada de retorno"],["cuidados","Cuidados no dia seguinte"],["conflito","Horário já ocupado"]];
+const SEC_TIPOS = [["confirmacao","Confirmação quando agenda"],["lembrete","Lembrete na véspera (com sim/não e resposta automática)"],["retorno","Chamada de retorno (botão ao concluir)"],["conflito","Aviso quando o horário do site já estava ocupado"],["cuidados","Cuidados logo depois de concluir o atendimento"]];
+const SEC_TEXTOS = [["confirmacao","Confirmação do agendamento"],["lembrete","Lembrete da véspera"],["sim","Resposta quando ela diz \"sim\""],["nao","Resposta quando ela diz \"não\""],["retorno","Chamada de retorno"],["cuidados","Cuidados (logo depois de concluir)"],["conflito","Horário já ocupado"]];
 const SEC_PADRAO = {
   confirmacao:'Oii {nome}, seu horário de {servico} está marcado para {quando} às {hora}. 💗 Te espero na {endereco}. Qualquer mudança, é só me avisar por aqui.',
   lembrete:'Oii {nome}, posso confirmar seu horário de {servico} {quando} às {hora}? É só me responder "sim" ou "não". 💗',
