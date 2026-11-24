@@ -137,6 +137,15 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:60
 .avit small{display:block;color:var(--muted);font-size:12px}
 .chk{flex-wrap:nowrap;align-items:flex-start}
 .chk input{margin-top:3px;flex:none}
+.func{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.func .fhead{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
+.func .fhead small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
+.func .fbody{display:grid;gap:10px;padding:0 14px 14px;border-top:1px solid var(--line);padding-top:12px}
+.func.on{border-color:#E6CFBF}
+.sw{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:14px;background:#D9CFC6;position:relative;flex:none;cursor:pointer;transition:background .2s;margin:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.sw:checked{background:var(--accent)}
+.sw:checked::after{transform:translateX(18px)}
 .secst{display:flex;align-items:center;gap:8px;font-weight:600}
 .secst i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .envit{border-top:1px solid var(--line);padding:8px 0;font-size:13px}
@@ -1039,7 +1048,7 @@ const SEC_PADRAO = {
   retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
   cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
   conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
-const VERSAO_APP = "24/11 · 15h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
+const VERSAO_APP = "24/11 · 16h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
 function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
   const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
@@ -1069,33 +1078,54 @@ function bindSecretaria(v){ const q = s => v.querySelector(s); if (!q("#secCard"
         return '<div class="envit"><b>'+esc(NOME[e.tipo]||e.tipo)+'</b> · '+esc(c.nome||"Cliente")+' · '+esc(new Date(e.enviadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}))+(resp?'<br><span class="tag">'+esc(resp)+'</span>':'')+'</div>'; }).join("");
     } catch(e){ box.innerHTML = '<p class="note">Não deu pra carregar agora.</p>'; } };
 }
+/* seções com chave: desligada, a seção fica fechada e a função some da agenda; ligada, abre e volta tudo (pedido da Lyslie, 24/11) */
+function secaoChave(chave, ligada, titulo, desc, corpo){
+  return '<div class="func'+(ligada?' on':'')+'"><label class="fhead"><span class="grow"><b>'+titulo+'</b><small>'+desc+'</small></span><input type="checkbox" class="sw" data-func="'+chave+'"'+(ligada?' checked':'')+' aria-label="'+titulo+'"></label><div class="fbody"'+(ligada?'':' hidden')+'>'+corpo+'</div></div>';
+}
+function secoesFuncoes(c){
+  let h = '<h2 class="sec">Retorno</h2><div class="card form"><p class="note" style="margin:0">Período ideal de retorno, usado na chamada da secretária ("o ideal é que você retorne entre…").</p>'+
+    '<div class="two"><label class="f">A partir de quantos dias?<input id="aPxDe" inputmode="numeric" value="'+esc(janDe())+'"></label><label class="f">Até quantos dias?<input id="aPxAte" inputmode="numeric" value="'+esc(janAte())+'"></label></div>'+
+    '<label class="f">Serviços que NÃO têm retorno (separe com |)<input id="aSemPx" value="'+esc(c.semProxima||"maquiagem|penteado|babyliss")+'"></label>'+
+    '<button class="btn-primary" id="aSalvaPx" style="justify-self:start">Salvar retorno</button></div>';
+  h += '<h2 class="sec">Funções</h2>';
+  h += secaoChave("msgsManuais", manuais(), "Mensagens que eu mando pelo WhatsApp", "Botões de confirmar, cuidados, manutenção e sumidas, que você mesma envia.",
+    '<p class="note">Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span> <span class="ph">{quando}</span>. Na “próxima”, também <span class="ph">{de}</span> <span class="ph">{ate}</span> <span class="ph">{janela}</span> e <span class="ph">{precos}</span>.</p>'+
+    MSGS.map(([k,l])=>'<label class="f">'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
+    '<button class="btn-primary" id="aSalvaMsg" style="justify-self:start">Salvar mensagens</button>');
+  h += secaoChave("domicilioAtivo", domAtivo(), "Atendimento domiciliar", "Opção de atendimento na casa da cliente, com taxa e ficha do local.",
+    '<div class="two"><label class="f">Taxa do atendimento domiciliar (R$)<input id="aTxDom" inputmode="decimal" value="'+esc(String(taxaDom()).replace(".",","))+'"></label><label class="f">Serviços que podem ser domiciliar (separe com |)<input id="aDomSv" value="'+esc(c.domicilioServicos||"maquiagem|penteado|babyliss")+'"></label></div>'+
+    '<button class="btn-primary" id="aSalvaDom" style="justify-self:start">Salvar domiciliar</button>');
+  h += secaoChave("reservaAtiva", resAtiva(), "Reserva do studio", "Fechamento do dia guardando uma parte do faturamento pra investir no studio.",
+    '<div class="two"><label class="f">Reserva (% do faturamento do dia)<input id="aResPct" inputmode="decimal" value="'+esc(String(resPct()).replace(".",","))+'"></label><label class="f">Horário do fechamento do dia<input id="aResHora" type="time" value="'+esc(resHora())+'"></label></div>'+
+    '<button class="btn-primary" id="aSalvaRes" style="justify-self:start">Salvar reserva</button>');
+  return h;
+}
+function bindFuncoes(v){
+  const q = s => v.querySelector(s);
+  v.querySelectorAll("[data-func]").forEach(sw => sw.onchange = () => { const box = sw.closest(".func"); box.classList.toggle("on", sw.checked); box.querySelector(".fbody").hidden = !sw.checked;
+    saveCfg({[sw.dataset.func]: sw.checked}, sw.checked ? "Ativado" : "Desativado"); });
+  q("#aSalvaPx").onclick = () => { const de = Number(q("#aPxDe").value)||20, ate = Math.max(de, Number(q("#aPxAte").value)||30); saveCfg({proxDe: de, proxAte: ate, semProxima: q("#aSemPx").value.trim() || "maquiagem|penteado|babyliss"}, "Retorno salvo"); };
+  q("#aSalvaMsg").onclick = () => { const msgs = {}; MSGS.forEach(([k])=>msgs[k]=q("#msg_"+k).value); saveCfg({msgs}, "Mensagens salvas"); };
+  q("#aSalvaDom").onclick = () => saveCfg({taxaDomicilio: num(q("#aTxDom").value) ?? 30, domicilioServicos: q("#aDomSv").value.trim() || "maquiagem|penteado|babyliss"}, "Domiciliar salvo");
+  q("#aSalvaRes").onclick = () => saveCfg({reservaPct: num(q("#aResPct").value) ?? 10, reservaHora: q("#aResHora").value || "22:00", reservaInicio: resInicio()}, "Reserva salva");
+}
 function viewAjustes(v){
   const c = cfg();
   let html = '<p class="note" style="text-align:right;margin:0">Versão da agenda: '+VERSAO_APP+'</p>' + blocoSecretaria() +
-    '<h2 class="sec">Funções da agenda</h2><div class="card form">'+
-    '<label class="row chk"><input type="checkbox" id="fMan" style="width:auto"'+(manuais()?' checked':'')+'> Mensagens que eu mando pelo WhatsApp (botões de confirmar, cuidados, manutenção e sumidas)</label>'+
-    '<label class="row chk"><input type="checkbox" id="fDom" style="width:auto"'+(domAtivo()?' checked':'')+'> Atendimento domiciliar</label>'+
-    '<label class="row chk"><input type="checkbox" id="fRes" style="width:auto"'+(resAtiva()?' checked':'')+'> Reserva do studio (fechamento do dia)</label>'+
-    '<button class="btn-primary" id="fSalva" style="justify-self:start">Salvar funções</button></div>' + '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
+    '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
   html += '<h2 class="sec">Profissionais</h2><div class="card">'+(c.profissionais.length? c.profissionais.map(p=>'<div class="line"><span class="sw" style="background:'+esc(p.cor)+'"></span><div class="grow">'+esc(p.nome)+'<small>'+esc(p.area||"")+'</small></div><button class="btn-sm" data-pe="'+esc(p.id)+'">Editar</button></div>').join("") : '<p class="note">Cadastre quem atende no estúdio.</p>')+'<button style="margin-top:10px" id="aNovaP">+ Profissional</button></div>';
   html += '<h2 class="sec">Serviços e preços</h2><div class="card">'+(c.servicos.length? c.servicos.map(s=>'<div class="svc"><div style="min-width:0"><b>'+esc(s.nome)+'</b><div class="tag">'+(s.divisao?.length ? 'Combo · '+s.divisao.map(d=>esc(profById(d.profId)?.nome||"")+' '+brl(d.valor)).join(" + ") : esc(profById(s.profId)?.nome||"Qualquer profissional"))+(s.duracao?" · "+esc(s.duracao)+" min":"")+(s.retornoDias?" · manutenção em "+esc(s.retornoDias)+" dias":"")+'</div></div><div style="text-align:right"><span class="money">'+(s.preco!=null? brl(s.preco) : '<span style="color:var(--warn)">sem preço</span>')+'</span><br><button class="btn-sm btn-ghost" data-se="'+esc(s.id)+'">Editar</button></div></div>').join("") : '<p class="note">Cadastre os serviços com preço, duração e prazo de manutenção.</p>')+'<button style="margin-top:10px" id="aNovoS">+ Serviço</button></div>';
-  html += '<h2 class="sec">'+(manuais()?'Mensagens dos botões de WhatsApp (você manda)':'Retorno')+'</h2><div class="card form"><p class="note"'+(manuais()?'':' hidden')+'>Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span>. <span class="ph">{quando}</span> (hoje, amanhã ou o dia). Na “próxima”, também <span class="ph">{de}</span> e <span class="ph">{ate}</span> (as datas da janela) e <span class="ph">{janela}</span> (a frase da janela; nos cílios vira “já deixa sua manutenção garantida:”). <span class="ph">{precos}</span> põe as datas e os valores da manutenção dos cílios daquele tipo (até o dia X paga o valor de 20 dias; do dia Y ao dia Z, o de 30), contados do dia do atendimento. Em serviço sem manutenção, a linha some. O app troca pelos dados da cliente.</p>'+
-    MSGS.map(([k,l])=>'<label class="f"'+(manuais()?'':' hidden')+'>'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
-    '<p class="note"'+(manuais()?' hidden':'')+'>Período ideal de retorno, usado na chamada da secretária ("o ideal é que você retorne entre…").</p><div class="two"><label class="f">Próxima visita: a partir de quantos dias?<input id="aPxDe" inputmode="numeric" value="'+esc(janDe())+'"></label><label class="f">Até quantos dias?<input id="aPxAte" inputmode="numeric" value="'+esc(janAte())+'"></label></div>'+
-    '<label class="f">Serviços que NÃO chamam pra próxima (separe com |)<input id="aSemPx" value="'+esc(c.semProxima||"maquiagem|penteado|babyliss")+'"></label>'+
-    '<div class="two"'+(domAtivo()?'':' hidden')+'><label class="f">Taxa do atendimento domiciliar (R$)<input id="aTxDom" inputmode="decimal" value="'+esc(String(taxaDom()).replace(".",","))+'"></label><label class="f">Serviços que podem ser domiciliar (separe com |)<input id="aDomSv" value="'+esc(c.domicilioServicos||"maquiagem|penteado|babyliss")+'"></label></div>'+
-    '<button class="btn-primary" id="aSalvaMsg" style="justify-self:start">Salvar mensagens</button></div>';
-  html += '<h2 class="sec">Caixa e retornos</h2><div class="card form"><p class="note">Um item por linha.</p><label class="f">Formas de pagamento<textarea id="aFormas">'+esc(formas().join("\n"))+'</textarea></label><div class="two"><label class="f">Categorias de entrada<textarea id="aCatE">'+esc(catsEntrada().join("\n"))+'</textarea></label><label class="f">Categorias de saída<textarea id="aCatS">'+esc(catsSaida().join("\n"))+'</textarea></label></div><label class="f">Considerar cliente sumida depois de quantos dias sem vir?<input id="aSum" inputmode="numeric" value="'+esc(c.diasSumida||45)+'"></label><div class="two"><label class="f">Reserva do studio (% do faturamento do dia)<input id="aResPct" inputmode="decimal" value="'+esc(String(resPct()).replace(".",","))+'"></label><label class="f">Horário do fechamento do dia<input id="aResHora" type="time" value="'+esc(resHora())+'"></label></div><p class="note" style="margin:6px 0 0">Taxa de cada forma de pagamento. O caixa lança o valor já descontado.</p>'+formas().map((f,i)=>{ const t = taxaDe(f); return '<div class="two" style="align-items:end"><label class="f">'+esc(f)+' (taxa %)<input data-tx="'+i+'" inputmode="decimal" value="'+esc(String(t.pct||0).replace(".",","))+'"></label><label class="row" style="padding-bottom:10px"><input type="checkbox" data-tdu="'+i+'" style="width:auto"'+(t.proxDiaUtil?" checked":"")+'> Cai no próximo dia útil</label></div>'; }).join("")+'<button class="btn-primary" id="aSalvaCx" style="justify-self:start">Salvar</button></div>';
+  html += secoesFuncoes(c);
+  html += '<h2 class="sec">Caixa</h2><div class="card form"><p class="note">Um item por linha.</p><label class="f">Formas de pagamento<textarea id="aFormas">'+esc(formas().join("\n"))+'</textarea></label><div class="two"><label class="f">Categorias de entrada<textarea id="aCatE">'+esc(catsEntrada().join("\n"))+'</textarea></label><label class="f">Categorias de saída<textarea id="aCatS">'+esc(catsSaida().join("\n"))+'</textarea></label></div><label class="f">Considerar cliente sumida depois de quantos dias sem vir?<input id="aSum" inputmode="numeric" value="'+esc(c.diasSumida||45)+'"></label><p class="note" style="margin:6px 0 0">Taxa de cada forma de pagamento. O caixa lança o valor já descontado.</p>'+formas().map((f,i)=>{ const t = taxaDe(f); return '<div class="two" style="align-items:end"><label class="f">'+esc(f)+' (taxa %)<input data-tx="'+i+'" inputmode="decimal" value="'+esc(String(t.pct||0).replace(".",","))+'"></label><label class="row" style="padding-bottom:10px"><input type="checkbox" data-tdu="'+i+'" style="width:auto"'+(t.proxDiaUtil?" checked":"")+'> Cai no próximo dia útil</label></div>'; }).join("")+'<button class="btn-primary" id="aSalvaCx" style="justify-self:start">Salvar</button></div>';
   html += '<h2 class="sec">Conta e cópia dos dados</h2><div class="card form"><p class="note" style="margin:0">Entrou como <b>'+esc(S.user?.email||"")+'</b>.</p><div class="row"><button id="aCopia">Baixar cópia dos dados</button><button class="btn-danger" id="aSair">Sair da conta</button></div><p class="note" style="margin:0">Guarde uma cópia de vez em quando, no celular ou no Google Drive. O plano gratuito não faz backup sozinho.</p></div>';
   v.innerHTML = html;
   bindSecretaria(v);
   v.querySelector("#aCopia").onclick = baixarCopia;
   v.querySelector("#aSair").onclick = () => confirmar("Sair da conta neste aparelho?", "Sair", async () => { await window.__sair(); });
   const linhas = id => v.querySelector(id).value.split("\n").map(x=>x.trim()).filter(Boolean);
-  v.querySelector("#aSalvaCx").onclick = () => saveCfg({taxas: Object.fromEntries(formas().map((f,i)=>[f,{pct: num(v.querySelector('[data-tx="'+i+'"]').value)||0, proxDiaUtil: v.querySelector('[data-tdu="'+i+'"]').checked}])), formas: linhas("#aFormas"), catEntrada: linhas("#aCatE"), catSaida: linhas("#aCatS"), diasSumida: Number(v.querySelector("#aSum").value)||45, reservaPct: num(v.querySelector("#aResPct").value) ?? 10, reservaHora: v.querySelector("#aResHora").value || "22:00", reservaInicio: resInicio()}, "Ajustes salvos");
+  v.querySelector("#aSalvaCx").onclick = () => saveCfg({taxas: Object.fromEntries(formas().map((f,i)=>[f,{pct: num(v.querySelector('[data-tx="'+i+'"]').value)||0, proxDiaUtil: v.querySelector('[data-tdu="'+i+'"]').checked}])), formas: linhas("#aFormas"), catEntrada: linhas("#aCatE"), catSaida: linhas("#aCatS"), diasSumida: Number(v.querySelector("#aSum").value)||45}, "Ajustes salvos");
   v.querySelector("#aSalvaNome").onclick = () => saveCfg({estudio: v.querySelector("#aNome").value.trim() || "Estúdio"}, "Nome salvo");
-  v.querySelector("#fSalva").onclick = () => saveCfg({msgsManuais: v.querySelector("#fMan").checked, domicilioAtivo: v.querySelector("#fDom").checked, reservaAtiva: v.querySelector("#fRes").checked}, "Funções salvas");
-  v.querySelector("#aSalvaMsg").onclick = () => { const msgs = {}; MSGS.forEach(([k])=>msgs[k]=v.querySelector("#msg_"+k).value); const de = Number(v.querySelector("#aPxDe").value)||20, ate = Math.max(de, Number(v.querySelector("#aPxAte").value)||30); saveCfg({msgs, proxDe: de, proxAte: ate, semProxima: v.querySelector("#aSemPx").value.trim() || "maquiagem|penteado|babyliss", taxaDomicilio: num(v.querySelector("#aTxDom").value) ?? 30, domicilioServicos: v.querySelector("#aDomSv").value.trim() || "maquiagem|penteado|babyliss"}, (manuais()?"Mensagens salvas":"Salvo")); };
+  bindFuncoes(v);
   v.querySelector("#aNovaP").onclick = () => formProf();
   v.querySelectorAll("[data-pe]").forEach(b => b.onclick = () => formProf(profById(b.dataset.pe)));
   v.querySelector("#aNovoS").onclick = () => formSvc();
