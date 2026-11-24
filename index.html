@@ -50,6 +50,9 @@ header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height
 .brand .nm{background:var(--gold-text);-webkit-background-clip:text;background-clip:text;color:transparent}
 .brand small{display:block;font-family:var(--f-body);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .today{font-size:12.5px;color:var(--muted);text-align:right}
+.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.vsite{font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-decoration:none;border:1px solid #E6CFBF;background:var(--accent-soft);border-radius:999px;padding:5px 11px;white-space:nowrap}
+body.sem-login .vsite{display:none}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid #E6CFBF;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
 nav.tabs .in{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:760px}
 nav.tabs button{background:none;border:0;padding:10px 4px 9px;font:600 12px var(--f-body);color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative}
@@ -220,7 +223,7 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 <div class="wrap">
   <header class="top">
     <div class="logo"><span class="mono" aria-hidden="true"><b id="mono">LC</b></span><div class="brand" id="brand">Estúdio<small>Sobrancelha · Maquiagem · Cílios</small></div></div>
-    <div class="today" id="todayLbl"></div>
+    <div class="hdr-r"><div class="today" id="todayLbl"></div><a class="vsite" id="vsite" href="https://essenceglam-star.github.io/catalogo/" target="_blank" rel="noopener">Ver meu site ›</a></div>
   </header>
   <div id="banner"></div>
   <main id="view"><div class="empty"><b>Carregando a agenda…</b>Os agendamentos, clientes e o caixa aparecem aqui em instantes.</div></main>
@@ -462,6 +465,7 @@ function render(){
   $("#mono").textContent = iniciais(nm);
   $("#brand").innerHTML = (pre ? '<span class="pre">'+esc(pre[1].toUpperCase())+'</span>' : '') + '<span class="nm">'+esc(nm.toUpperCase())+'</span>' + "<small>" + esc(cfg().profissionais.map(p=>p.area||p.nome).filter(Boolean).join(" · ") || "Sobrancelha · Maquiagem · Cílios") + "</small>";
   $("#todayLbl").textContent = fmtDia(today());
+  $("#vsite").href = (S.sec && S.sec.linkSite) || "https://essenceglam-star.github.io/catalogo/"; /* catálogo da cliente (link em Ajustes → Secretária) */
   const pend = (manuais() ? S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length : 0) + (S.avisos||[]).length;
   const dot = $("#dueDot"); dot.hidden = !pend; dot.textContent = pend;
   const v = $("#view");
@@ -1048,7 +1052,7 @@ const SEC_PADRAO = {
   retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
   cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
   conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
-const VERSAO_APP = "24/11 · 16h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
+const VERSAO_APP = "24/11 · 17h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
 function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
   const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
