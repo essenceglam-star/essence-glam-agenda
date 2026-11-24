@@ -316,6 +316,10 @@ function recebimento(bruto, forma, dataAt){
 }
 const catsEntrada = () => lista(cfg().catEntrada, ["Atendimento","Venda de produto","Outro"]);
 const catsSaida = () => lista(cfg().catSaida, ["Material","Aluguel","Contas","Marketing","Outro"]);
+/* ---------- funções que a Lyslie liga e desliga em Ajustes (24/11/2026) ---------- */
+const manuais = () => cfg().msgsManuais === true;      /* botões "mandar no WhatsApp" que vocês mesmas enviam */
+const domAtivo = () => cfg().domicilioAtivo === true;  /* atendimento domiciliar */
+const resAtiva = () => cfg().reservaAtiva !== false;   /* reserva do studio (fechamento do dia) */
 /* ---------- reserva do studio: % do faturamento diário de cada profissional ---------- */
 const CAT_RES = "Reserva do studio";
 const resPct = () => { const n = Number(cfg().reservaPct); return isFinite(n) && n >= 0 ? n : 10; };
@@ -329,7 +333,7 @@ function fechamentoDia(data, pid){
   return {fat, sai, res: Math.round(fat*resPct())/100};
 }
 function reservasPendentes(){
-  if (!S.pronto.caixa || !S.pronto.reservas || !S.cfg) return [];
+  if (!S.pronto.caixa || !S.pronto.reservas || !S.cfg || !resAtiva()) return [];
   const feitos = new Set(S.reservas.map(r => r.id));
   const hoje = today(); const passouHora = agoraHM() >= resHora();
   const dias = [...new Set(S.caixa.map(l => l.data))].filter(d => d >= resInicio() && (d < hoje || (d === hoje && passouHora))).sort();
@@ -449,7 +453,7 @@ function render(){
   $("#mono").textContent = iniciais(nm);
   $("#brand").innerHTML = (pre ? '<span class="pre">'+esc(pre[1].toUpperCase())+'</span>' : '') + '<span class="nm">'+esc(nm.toUpperCase())+'</span>' + "<small>" + esc(cfg().profissionais.map(p=>p.area||p.nome).filter(Boolean).join(" · ") || "Sobrancelha · Maquiagem · Cílios") + "</small>";
   $("#todayLbl").textContent = fmtDia(today());
-  const pend = S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length + (S.avisos||[]).length;
+  const pend = (manuais() ? S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length : 0) + (S.avisos||[]).length;
   const dot = $("#dueDot"); dot.hidden = !pend; dot.textContent = pend;
   const v = $("#view");
   if (!S.db && S.dbChecked){ v.innerHTML = '<div class="empty"><b>Não deu pra carregar</b>Confira a internet e recarregue a página.</div>'; return; }
@@ -474,6 +478,7 @@ function bindProfChips(v){ v.querySelectorAll("[data-prof]").forEach(b => b.oncl
 const dtAg = a => { const d = parseYmd(a.data); const [h,m] = String(a.hora||"0:0").split(":").map(Number); d.setHours(h||0, m||0, 0, 0); return d; };
 const primeiroNome = c => String(c?.nome||"").split(" ")[0];
 function painelConfirmar(){
+  if (!manuais()) return "";
   const agora = Date.now();
   const lista = S.ags.filter(a => a.status === "agendado" && agDaProf(a, S.prof)).map(a => ({a, h:(dtAg(a)-agora)/3600000})).filter(x => x.h > 0 && x.h <= 24).sort((x,y)=>x.h-y.h);
   if (!lista.length) return "";
@@ -677,7 +682,7 @@ function formAg(a, cliPre, svcPre, diaPre){
     '<div class="foot">'+(ed?'<button type="button" class="btn-danger" id="agDel">Apagar</button>':'')+'<button type="button" id="agX">Voltar</button><button class="btn-primary">Salvar</button></div></form>', m => {
     const $ = s => m.querySelector(s);
     $("#agTaxaTxt").textContent = brl(taxaDom());
-    const temDom = () => sel.some(id => domRe().test(svcById(id)?.nome||""));
+    const temDom = () => domAtivo() && sel.some(id => domRe().test(svcById(id)?.nome||""));
     const domOn = () => temDom() && $("#agDom").checked;
     const fSvc = () => { const pid = $("#agProf").value; const ss = cfg().servicos.filter(s=>!s.profId || s.profId===pid || (s.divisao||[]).some(d=>d.profId===pid));
       $("#agSvc").innerHTML = '<option value="">'+(ss.length ? (sel.length ? "+ Adicionar outro serviço…" : "Escolha o serviço…") : "Cadastre serviços em Ajustes")+'</option>'+ss.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.nome)+(s.preco!=null?" — "+brl(s.preco):"")+'</option>').join(""); };
@@ -801,7 +806,7 @@ function formConcluir(a){
     '<p class="note" id="cLiq"></p>'+
     '<label class="row"><input type="checkbox" id="cCuid" checked style="width:auto"> Mandar os cuidados agora</label>'+
     (a.divisao?.length ? '<p class="note">Combo: o valor recebido é dividido no caixa assim: '+a.divisao.map(d=>esc(profById(d.profId)?.nome||"")+' '+brl(d.valor)).join(" + ")+' (proporcional, se o valor mudar).</p>' : '')+
-    (rets.length ? '<label class="row"><input type="checkbox" id="cRet" checked style="width:auto"> Criar lembretes de retorno: '+rets.map(r=>esc(r.nome)+' em '+esc(r.dias)+' dias ('+fmtCurto(addDays(a.data, r.dias))+')').join("; ")+'</label>' : '<p class="note">'+(svcsDoAg(a).length>1?"Esses serviços não têm":"Este serviço não tem")+' prazo de manutenção. Dá pra definir em Ajustes.</p>')+
+    (!manuais() ? '' : rets.length ? '<label class="row"><input type="checkbox" id="cRet" checked style="width:auto"> Criar lembretes de retorno: '+rets.map(r=>esc(r.nome)+' em '+esc(r.dias)+' dias ('+fmtCurto(addDays(a.data, r.dias))+')').join("; ")+'</label>' : '<p class="note">'+(svcsDoAg(a).length>1?"Esses serviços não têm":"Este serviço não tem")+' prazo de manutenção. Dá pra definir em Ajustes.</p>')+
     '<div class="foot"><button type="button" id="cX">Voltar</button><button class="btn-primary">Concluir</button></div></form>', m => {
     m.querySelector("#cX").onclick = closeModal;
     const liq = () => { const v = num(m.querySelector("#cValor").value); const f = m.querySelector("#cForma").value; const el = m.querySelector("#cLiq");
@@ -962,9 +967,11 @@ function viewRetornos(v){
     return '<div class="due'+(a.enviadas?" late":"")+'"><div class="row"><b class="grow">'+esc(c.nome||"Cliente removida")+'</b><span class="tag">próxima entre '+esc(ctx.de)+' e '+esc(ctx.ate)+'</span></div><div class="tag">'+(a.enviadas ? 'Chamada '+(a.enviadas>1?a.enviadas+" vezes":"em "+fmtCurto(a.enviadoEm))+' e ainda sem horário marcado' : 'Ainda não foi chamada pra marcar a próxima')+' · '+esc(a.servicoNome||"")+(p.nome?" · "+esc(p.nome):"")+'</div><div class="acts row">'+waBtn(c.telefone, fill(tpl, ctx), a.enviadas ? "Chamar de novo" : "Chamar pra próxima", "btn-sm", 'data-px="'+esc(a.id)+'" data-pxn="'+(a.enviadas||0)+'"')+'<button class="btn-sm" data-marcar="'+esc(a.clienteId)+'">Marcar horário</button><button class="btn-sm btn-ghost" data-ok="'+esc(a.id)+'">Não vai voltar</button></div></div>'; };
   const chs = (S.secRet||[]).slice().sort((a,b)=>String(a.enviarEm).localeCompare(String(b.enviarEm)));
   if (chs.length) html += '<h2 class="sec">A secretária vai chamar</h2><div class="list">'+chs.map(r => { const c = cliById(r.clienteId) || {}; return '<div class="due"><div class="row"><b class="grow">'+esc(c.nome||"Cliente")+'</b><span class="tag">dia '+esc(fmtCurto(r.enviarEm))+'</span></div><div class="tag">Retorno de '+esc(nomeMsg(r.servicoNome||""))+' · atendida em '+esc(fmtCurto(r.dataAtendimento))+'</div><div class="row"><button class="btn-sm btn-ghost" data-rcan="'+esc(r.id)+'">Não chamar</button></div></div>'; }).join("")+'</div>';
+  if (manuais()) {
   html += '<h2 class="sec">Para hoje</h2>' + (vencidos.length ? '<div class="list">'+vencidos.map(item).join("")+'</div>' : '<div class="empty"><b>Tudo em dia</b>Quando um atendimento é concluído, o lembrete dos cuidados e da manutenção aparece aqui.</div>');
   if (proximos.length) html += '<h2 class="sec">Próximos 14 dias</h2><div class="list">'+proximos.map(item).join("")+'</div>';
   if (sumidas.length) html += '<h2 class="sec">Sumidas há mais de '+nSum+' dias</h2><div class="list">'+sumidas.map(x => '<div class="due"><div class="row"><b class="grow">'+esc(x.c.nome)+'</b><span class="tag">último: '+fmtCurto(x.ult.data)+'</span></div><div class="tag">'+esc(x.ult.servicoNome||"")+'</div><div class="row">'+waBtn(x.c.telefone, "Oi, "+x.c.nome.split(" ")[0]+"! Saudade de você por aqui. Quer marcar um horário?", "Chamar")+'<button class="btn-sm" data-marcar="'+esc(x.c.id)+'">Marcar horário</button></div></div>').join("")+'</div>';
+  } else if (!(S.avisos||[]).length && !chs.length) html += '<div class="empty"><b>Tudo em dia</b>Aqui aparecem os avisos da secretária: quem agendou pelo site, quem desmarcou e quem ela vai chamar pra retorno.</div>';
   v.innerHTML = html;
   bindProfChips(v);
   v.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => run(()=>col("acompanhamentos").doc(b.dataset.ok).update({feito:true, feitoEm: today()}), "Marcado como feito"));
@@ -987,7 +994,7 @@ function viewCaixa(v){
   html += '<div class="kpis"><div class="kpi"><span>Entradas</span><b class="pos">'+brl(ent)+'</b></div><div class="kpi"><span>Saídas</span><b class="neg">'+brl(sai)+'</b></div><div class="kpi"><span>Saldo</span><b>'+brl(ent-sai)+'</b></div></div>';
   const resMes = S.reservas.filter(r => r.data.slice(0,7) === S.mes && (S.prof==="todas" || r.profId===S.prof)).reduce((s,r)=>s+(Number(r.valor)||0),0);
   const resTot = S.reservas.filter(r => S.prof==="todas" || r.profId===S.prof).reduce((s,r)=>s+(Number(r.valor)||0),0);
-  html += '<h2 class="sec">Reserva do studio · '+resPct()+'% pra investir na empresa</h2><div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><span>Neste mês</span><b>'+brl(resMes)+'</b></div><div class="kpi"><span>Acumulado</span><b style="color:var(--accent)">'+brl(resTot)+'</b></div></div>';
+  if (resAtiva()) html += '<h2 class="sec">Reserva do studio · '+resPct()+'% pra investir na empresa</h2><div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><span>Neste mês</span><b>'+brl(resMes)+'</b></div><div class="kpi"><span>Acumulado</span><b style="color:var(--accent)">'+brl(resTot)+'</b></div></div>';
   html += '<div class="row" style="margin-top:12px"><button class="btn-primary grow" data-lanc="entrada" style="justify-content:center">+ Entrada</button><button class="grow" data-lanc="saida" style="justify-content:center">+ Saída</button></div>';
   if (porProf.length > 1 && S.prof==="todas") html += '<h2 class="sec">Por profissional</h2><div class="card">'+porProf.map(x=>'<div style="margin-bottom:10px"><div class="row"><span class="grow">'+esc(x.p.nome)+'</span><span class="money">'+brl(x.v)+'</span></div><div class="bar" style="--c:'+esc(x.p.cor)+'"><i style="width:'+(x.v/maxP*100)+'%"></i></div></div>').join("")+'</div>';
   if (Object.keys(porForma).length) html += '<h2 class="sec">Por forma de pagamento</h2><div class="card">'+Object.entries(porForma).sort((a,b)=>b[1]-a[1]).map(([k,val])=>'<div class="line"><span class="grow">'+esc(k)+'</span><span class="money">'+brl(val)+'</span></div>').join("")+'</div>';
@@ -1032,7 +1039,7 @@ const SEC_PADRAO = {
   retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
   cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
   conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
-const VERSAO_APP = "24/11 · 14h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
+const VERSAO_APP = "24/11 · 15h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
 function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
   const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
@@ -1064,14 +1071,19 @@ function bindSecretaria(v){ const q = s => v.querySelector(s); if (!q("#secCard"
 }
 function viewAjustes(v){
   const c = cfg();
-  let html = '<p class="note" style="text-align:right;margin:0">Versão da agenda: '+VERSAO_APP+'</p>' + blocoSecretaria() + '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
+  let html = '<p class="note" style="text-align:right;margin:0">Versão da agenda: '+VERSAO_APP+'</p>' + blocoSecretaria() +
+    '<h2 class="sec">Funções da agenda</h2><div class="card form">'+
+    '<label class="row chk"><input type="checkbox" id="fMan" style="width:auto"'+(manuais()?' checked':'')+'> Mensagens que eu mando pelo WhatsApp (botões de confirmar, cuidados, manutenção e sumidas)</label>'+
+    '<label class="row chk"><input type="checkbox" id="fDom" style="width:auto"'+(domAtivo()?' checked':'')+'> Atendimento domiciliar</label>'+
+    '<label class="row chk"><input type="checkbox" id="fRes" style="width:auto"'+(resAtiva()?' checked':'')+'> Reserva do studio (fechamento do dia)</label>'+
+    '<button class="btn-primary" id="fSalva" style="justify-self:start">Salvar funções</button></div>' + '<h2 class="sec">Estúdio</h2><div class="card form"><label class="f">Nome do estúdio<input id="aNome" value="'+esc(c.estudio)+'"></label><button class="btn-primary" id="aSalvaNome" style="justify-self:start">Salvar nome</button></div>';
   html += '<h2 class="sec">Profissionais</h2><div class="card">'+(c.profissionais.length? c.profissionais.map(p=>'<div class="line"><span class="sw" style="background:'+esc(p.cor)+'"></span><div class="grow">'+esc(p.nome)+'<small>'+esc(p.area||"")+'</small></div><button class="btn-sm" data-pe="'+esc(p.id)+'">Editar</button></div>').join("") : '<p class="note">Cadastre quem atende no estúdio.</p>')+'<button style="margin-top:10px" id="aNovaP">+ Profissional</button></div>';
   html += '<h2 class="sec">Serviços e preços</h2><div class="card">'+(c.servicos.length? c.servicos.map(s=>'<div class="svc"><div style="min-width:0"><b>'+esc(s.nome)+'</b><div class="tag">'+(s.divisao?.length ? 'Combo · '+s.divisao.map(d=>esc(profById(d.profId)?.nome||"")+' '+brl(d.valor)).join(" + ") : esc(profById(s.profId)?.nome||"Qualquer profissional"))+(s.duracao?" · "+esc(s.duracao)+" min":"")+(s.retornoDias?" · manutenção em "+esc(s.retornoDias)+" dias":"")+'</div></div><div style="text-align:right"><span class="money">'+(s.preco!=null? brl(s.preco) : '<span style="color:var(--warn)">sem preço</span>')+'</span><br><button class="btn-sm btn-ghost" data-se="'+esc(s.id)+'">Editar</button></div></div>').join("") : '<p class="note">Cadastre os serviços com preço, duração e prazo de manutenção.</p>')+'<button style="margin-top:10px" id="aNovoS">+ Serviço</button></div>';
-  html += '<h2 class="sec">Mensagens dos botões de WhatsApp (você manda)</h2><div class="card form"><p class="note">Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span>. <span class="ph">{quando}</span> (hoje, amanhã ou o dia). Na “próxima”, também <span class="ph">{de}</span> e <span class="ph">{ate}</span> (as datas da janela) e <span class="ph">{janela}</span> (a frase da janela; nos cílios vira “já deixa sua manutenção garantida:”). <span class="ph">{precos}</span> põe as datas e os valores da manutenção dos cílios daquele tipo (até o dia X paga o valor de 20 dias; do dia Y ao dia Z, o de 30), contados do dia do atendimento. Em serviço sem manutenção, a linha some. O app troca pelos dados da cliente.</p>'+
-    MSGS.map(([k,l])=>'<label class="f">'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
-    '<div class="two"><label class="f">Próxima visita: a partir de quantos dias?<input id="aPxDe" inputmode="numeric" value="'+esc(janDe())+'"></label><label class="f">Até quantos dias?<input id="aPxAte" inputmode="numeric" value="'+esc(janAte())+'"></label></div>'+
+  html += '<h2 class="sec">'+(manuais()?'Mensagens dos botões de WhatsApp (você manda)':'Retorno')+'</h2><div class="card form"><p class="note"'+(manuais()?'':' hidden')+'>Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span>. <span class="ph">{quando}</span> (hoje, amanhã ou o dia). Na “próxima”, também <span class="ph">{de}</span> e <span class="ph">{ate}</span> (as datas da janela) e <span class="ph">{janela}</span> (a frase da janela; nos cílios vira “já deixa sua manutenção garantida:”). <span class="ph">{precos}</span> põe as datas e os valores da manutenção dos cílios daquele tipo (até o dia X paga o valor de 20 dias; do dia Y ao dia Z, o de 30), contados do dia do atendimento. Em serviço sem manutenção, a linha some. O app troca pelos dados da cliente.</p>'+
+    MSGS.map(([k,l])=>'<label class="f"'+(manuais()?'':' hidden')+'>'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
+    '<p class="note"'+(manuais()?' hidden':'')+'>Período ideal de retorno, usado na chamada da secretária ("o ideal é que você retorne entre…").</p><div class="two"><label class="f">Próxima visita: a partir de quantos dias?<input id="aPxDe" inputmode="numeric" value="'+esc(janDe())+'"></label><label class="f">Até quantos dias?<input id="aPxAte" inputmode="numeric" value="'+esc(janAte())+'"></label></div>'+
     '<label class="f">Serviços que NÃO chamam pra próxima (separe com |)<input id="aSemPx" value="'+esc(c.semProxima||"maquiagem|penteado|babyliss")+'"></label>'+
-    '<div class="two"><label class="f">Taxa do atendimento domiciliar (R$)<input id="aTxDom" inputmode="decimal" value="'+esc(String(taxaDom()).replace(".",","))+'"></label><label class="f">Serviços que podem ser domiciliar (separe com |)<input id="aDomSv" value="'+esc(c.domicilioServicos||"maquiagem|penteado|babyliss")+'"></label></div>'+
+    '<div class="two"'+(domAtivo()?'':' hidden')+'><label class="f">Taxa do atendimento domiciliar (R$)<input id="aTxDom" inputmode="decimal" value="'+esc(String(taxaDom()).replace(".",","))+'"></label><label class="f">Serviços que podem ser domiciliar (separe com |)<input id="aDomSv" value="'+esc(c.domicilioServicos||"maquiagem|penteado|babyliss")+'"></label></div>'+
     '<button class="btn-primary" id="aSalvaMsg" style="justify-self:start">Salvar mensagens</button></div>';
   html += '<h2 class="sec">Caixa e retornos</h2><div class="card form"><p class="note">Um item por linha.</p><label class="f">Formas de pagamento<textarea id="aFormas">'+esc(formas().join("\n"))+'</textarea></label><div class="two"><label class="f">Categorias de entrada<textarea id="aCatE">'+esc(catsEntrada().join("\n"))+'</textarea></label><label class="f">Categorias de saída<textarea id="aCatS">'+esc(catsSaida().join("\n"))+'</textarea></label></div><label class="f">Considerar cliente sumida depois de quantos dias sem vir?<input id="aSum" inputmode="numeric" value="'+esc(c.diasSumida||45)+'"></label><div class="two"><label class="f">Reserva do studio (% do faturamento do dia)<input id="aResPct" inputmode="decimal" value="'+esc(String(resPct()).replace(".",","))+'"></label><label class="f">Horário do fechamento do dia<input id="aResHora" type="time" value="'+esc(resHora())+'"></label></div><p class="note" style="margin:6px 0 0">Taxa de cada forma de pagamento. O caixa lança o valor já descontado.</p>'+formas().map((f,i)=>{ const t = taxaDe(f); return '<div class="two" style="align-items:end"><label class="f">'+esc(f)+' (taxa %)<input data-tx="'+i+'" inputmode="decimal" value="'+esc(String(t.pct||0).replace(".",","))+'"></label><label class="row" style="padding-bottom:10px"><input type="checkbox" data-tdu="'+i+'" style="width:auto"'+(t.proxDiaUtil?" checked":"")+'> Cai no próximo dia útil</label></div>'; }).join("")+'<button class="btn-primary" id="aSalvaCx" style="justify-self:start">Salvar</button></div>';
   html += '<h2 class="sec">Conta e cópia dos dados</h2><div class="card form"><p class="note" style="margin:0">Entrou como <b>'+esc(S.user?.email||"")+'</b>.</p><div class="row"><button id="aCopia">Baixar cópia dos dados</button><button class="btn-danger" id="aSair">Sair da conta</button></div><p class="note" style="margin:0">Guarde uma cópia de vez em quando, no celular ou no Google Drive. O plano gratuito não faz backup sozinho.</p></div>';
@@ -1082,7 +1094,8 @@ function viewAjustes(v){
   const linhas = id => v.querySelector(id).value.split("\n").map(x=>x.trim()).filter(Boolean);
   v.querySelector("#aSalvaCx").onclick = () => saveCfg({taxas: Object.fromEntries(formas().map((f,i)=>[f,{pct: num(v.querySelector('[data-tx="'+i+'"]').value)||0, proxDiaUtil: v.querySelector('[data-tdu="'+i+'"]').checked}])), formas: linhas("#aFormas"), catEntrada: linhas("#aCatE"), catSaida: linhas("#aCatS"), diasSumida: Number(v.querySelector("#aSum").value)||45, reservaPct: num(v.querySelector("#aResPct").value) ?? 10, reservaHora: v.querySelector("#aResHora").value || "22:00", reservaInicio: resInicio()}, "Ajustes salvos");
   v.querySelector("#aSalvaNome").onclick = () => saveCfg({estudio: v.querySelector("#aNome").value.trim() || "Estúdio"}, "Nome salvo");
-  v.querySelector("#aSalvaMsg").onclick = () => { const msgs = {}; MSGS.forEach(([k])=>msgs[k]=v.querySelector("#msg_"+k).value); const de = Number(v.querySelector("#aPxDe").value)||20, ate = Math.max(de, Number(v.querySelector("#aPxAte").value)||30); saveCfg({msgs, proxDe: de, proxAte: ate, semProxima: v.querySelector("#aSemPx").value.trim() || "maquiagem|penteado|babyliss", taxaDomicilio: num(v.querySelector("#aTxDom").value) ?? 30, domicilioServicos: v.querySelector("#aDomSv").value.trim() || "maquiagem|penteado|babyliss"}, "Mensagens salvas"); };
+  v.querySelector("#fSalva").onclick = () => saveCfg({msgsManuais: v.querySelector("#fMan").checked, domicilioAtivo: v.querySelector("#fDom").checked, reservaAtiva: v.querySelector("#fRes").checked}, "Funções salvas");
+  v.querySelector("#aSalvaMsg").onclick = () => { const msgs = {}; MSGS.forEach(([k])=>msgs[k]=v.querySelector("#msg_"+k).value); const de = Number(v.querySelector("#aPxDe").value)||20, ate = Math.max(de, Number(v.querySelector("#aPxAte").value)||30); saveCfg({msgs, proxDe: de, proxAte: ate, semProxima: v.querySelector("#aSemPx").value.trim() || "maquiagem|penteado|babyliss", taxaDomicilio: num(v.querySelector("#aTxDom").value) ?? 30, domicilioServicos: v.querySelector("#aDomSv").value.trim() || "maquiagem|penteado|babyliss"}, (manuais()?"Mensagens salvas":"Salvo")); };
   v.querySelector("#aNovaP").onclick = () => formProf();
   v.querySelectorAll("[data-pe]").forEach(b => b.onclick = () => formProf(profById(b.dataset.pe)));
   v.querySelector("#aNovoS").onclick = () => formSvc();
