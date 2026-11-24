@@ -15,7 +15,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<title>Lyslie Cruz · Agenda</title>
+<script src="cliente.js"></script>
+<title>Agenda</title>
 <meta name="color-scheme" content="light only">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
@@ -222,8 +223,8 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 
 <div class="wrap">
   <header class="top">
-    <div class="logo"><span class="mono" aria-hidden="true"><b id="mono">LC</b></span><div class="brand" id="brand">Estúdio<small>Sobrancelha · Maquiagem · Cílios</small></div></div>
-    <div class="hdr-r"><div class="today" id="todayLbl"></div><a class="vsite" id="vsite" href="https://essenceglam-star.github.io/catalogo/" target="_blank" rel="noopener">Ver meu site ›</a></div>
+    <div class="logo"><span class="mono" aria-hidden="true"><b id="mono"></b></span><div class="brand" id="brand">Estúdio<small>Sobrancelha · Maquiagem · Cílios</small></div></div>
+    <div class="hdr-r"><div class="today" id="todayLbl"></div><a class="vsite" id="vsite" href="#" target="_blank" rel="noopener">Ver meu site ›</a></div>
   </header>
   <div id="banner"></div>
   <main id="view"><div class="empty"><b>Carregando a agenda…</b>Os agendamentos, clientes e o caixa aparecem aqui em instantes.</div></main>
@@ -240,10 +241,10 @@ body.sem-login nav.tabs,body.sem-login #reservaRoot{display:none}
 <div id="modalRoot"></div>
 <div id="login" class="login" hidden>
   <form id="lgForm" class="lgbox" autocomplete="on">
-    <span class="mono lgmono" aria-hidden="true"><b>LC</b></span>
+    <span class="mono lgmono" aria-hidden="true"><b id="lgMono"></b></span>
     <div class="lgpre">AGENDA</div>
-    <h1 class="lgnome">LYSLIE CRUZ</h1>
-    <div class="lgcid">ARCOS-MG</div>
+    <h1 class="lgnome" id="lgNome"></h1>
+    <div class="lgcid" id="lgCid"></div>
     <label class="f">E-mail<input id="lgEmail" type="email" autocomplete="username" inputmode="email" required></label>
     <label class="f">Senha<input id="lgSenha" type="password" autocomplete="current-password" required></label>
     <button class="btn-primary" id="lgBtn" style="justify-content:center">Entrar</button>
@@ -331,7 +332,8 @@ const catsSaida = () => lista(cfg().catSaida, ["Material","Aluguel","Contas","Ma
 /* ---------- funções que a Lyslie liga e desliga em Ajustes (24/11/2026) ---------- */
 const manuais = () => cfg().msgsManuais === true;      /* botões "mandar no WhatsApp" que vocês mesmas enviam */
 const domAtivo = () => cfg().domicilioAtivo === true;  /* atendimento domiciliar */
-const resAtiva = () => cfg().reservaAtiva !== false;   /* reserva do studio (fechamento do dia) */
+const resAtiva = () => cfg().reservaAtiva !== false;
+const anamAtiva = () => cfg().anamneseAtiva === true;  /* ficha de anamnese na ficha da cliente */   /* reserva do studio (fechamento do dia) */
 /* ---------- reserva do studio: % do faturamento diário de cada profissional ---------- */
 const CAT_RES = "Reserva do studio";
 const resPct = () => { const n = Number(cfg().reservaPct); return isFinite(n) && n >= 0 ? n : 10; };
@@ -465,7 +467,7 @@ function render(){
   $("#mono").textContent = iniciais(nm);
   $("#brand").innerHTML = (pre ? '<span class="pre">'+esc(pre[1].toUpperCase())+'</span>' : '') + '<span class="nm">'+esc(nm.toUpperCase())+'</span>' + "<small>" + esc(cfg().profissionais.map(p=>p.area||p.nome).filter(Boolean).join(" · ") || "Sobrancelha · Maquiagem · Cílios") + "</small>";
   $("#todayLbl").textContent = fmtDia(today());
-  $("#vsite").href = (S.sec && S.sec.linkSite) || "https://essenceglam-star.github.io/catalogo/"; /* catálogo da cliente (link em Ajustes → Secretária) */
+  $("#vsite").href = (S.sec && S.sec.linkSite) || CLIENTE.site || "#"; /* catálogo da cliente (link em Ajustes → Secretária) */
   const pend = (manuais() ? S.acomp.filter(a => !a.feito && a.data <= today() && acompValido(a)).length : 0) + (S.avisos||[]).length;
   const dot = $("#dueDot"); dot.hidden = !pend; dot.textContent = pend;
   const v = $("#view");
@@ -935,6 +937,37 @@ function formCliente(c){
     };
   });
 }
+/* ---------- anamnese ---------- */
+const ANAM = [
+  ["nascimento","Data de nascimento","data"],
+  ["alergias","Tem alergia? (cola, cosméticos, henna, esmalte, látex, medicamentos) Quais?","texto"],
+  ["gestante","Está grávida ou amamentando?","simnao"],
+  ["medicamentos","Usa algum medicamento ou faz tratamento? (ex.: Roacutan, anticoagulante, quimioterapia, hormônios)","texto"],
+  ["olhos","Tem algum problema nos olhos? (conjuntivite, blefarite, olho seco, glaucoma, cirurgia recente)","texto"],
+  ["lentes","Usa lente de contato?","simnao"],
+  ["pele","Tem algum problema de pele no rosto? (dermatite, psoríase, acne, queloide, rosácea)","texto"],
+  ["acidos","Usa ácidos ou retinoides no rosto?","simnao"],
+  ["antes","Já fez esse procedimento antes? Teve alguma reação?","texto"],
+  ["dorme","Dorme de lado ou de bruços? Qual lado?","texto"],
+  ["obs","Outras observações","texto"]
+];
+const ALERTA_ANAM = ["alergias","medicamentos","olhos","pele"];
+function resumoAnamnese(c){ const a = c.anamnese; if (!a) return '<p class="note">Ainda não preenchida.</p>';
+  const atn = ALERTA_ANAM.filter(k => a[k] && !/^(n[aã]o|nada|nenhum[a]?|-)$/i.test(String(a[k]).trim()));
+  const linhas = ANAM.filter(([k]) => a[k] != null && String(a[k]).trim() !== "").map(([k,l]) => '<div class="line"><div class="grow"><small>'+esc(l.replace(/\?.*$/,"?"))+'</small><b style="font-weight:500">'+esc(k==="nascimento"?fmtCurto(a[k])+"/"+a[k].slice(0,4):String(a[k]))+'</b></div></div>').join("");
+  return (atn.length ? '<div class="banner" style="margin-bottom:8px">⚠️ Atenção: '+esc(atn.map(k => ANAM.find(x=>x[0]===k)[1].split("?")[0]).join(" · "))+'</div>' : '')+'<div class="card" style="padding:4px 12px">'+linhas+'</div><p class="note">Preenchida em '+esc(fmtCurto(a.preenchidoEm||""))+'.</p>'; }
+function formAnamnese(id){ const c = cliById(id); if (!c) return; const a = c.anamnese || {};
+  modal('<h3>Anamnese · '+esc(c.nome)+'</h3><form class="form" id="fAnam">'+ANAM.map(([k,l,t]) => t==="data" ? '<label class="f">'+l+'<input type="date" data-an="'+k+'" value="'+esc(a[k]||c.nascimento||"")+'"></label>'
+      : t==="simnao" ? '<label class="f">'+l+'<select data-an="'+k+'"><option value="">—</option>'+["Não","Sim"].map(o=>'<option'+(a[k]===o?' selected':'')+'>'+o+'</option>').join("")+'</select></label>'
+      : '<label class="f">'+l+'<textarea data-an="'+k+'" style="min-height:58px">'+esc(a[k]||"")+'</textarea></label>').join("")+
+    '<label class="row chk"><input type="checkbox" id="anOk" style="width:auto"'+(a.declarou?' checked':'')+'> A cliente confirmou que as informações são verdadeiras.</label>'+
+    '<div class="foot"><button type="button" id="anX">Voltar</button><button class="btn-primary">Salvar anamnese</button></div></form>', m => {
+    m.querySelector("#anX").onclick = () => { closeModal(); fichaCliente(id); };
+    m.querySelector("#fAnam").onsubmit = async e => { e.preventDefault(); const n = {}; m.querySelectorAll("[data-an]").forEach(x => n[x.dataset.an] = x.value.trim());
+      n.declarou = m.querySelector("#anOk").checked; n.preenchidoEm = today();
+      const up = {anamnese: n}; if (n.nascimento) up.nascimento = n.nascimento;
+      closeModal(); const ok = await run(()=>col("clientes").doc(id).update(up), "Anamnese salva"); if (ok){ const cc = cliById(id); if (cc) Object.assign(cc, up); } fichaCliente(id); };
+  }); }
 function fichaCliente(id){
   const c = cliById(id); if (!c) return;
   const ags = S.ags.filter(a=>a.clienteId===id).sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));
@@ -950,11 +983,13 @@ function fichaCliente(id){
   modal('<h3>'+esc(c.nome)+'</h3><div class="row" style="margin-bottom:10px">'+waBtn(c.telefone, msg, "Abrir conversa", " ")+'<span class="wa-num">'+esc(c.telefone||"")+'</span></div>'+
     '<div class="kpis" style="margin-bottom:12px"><div class="kpi"><span>Atendimentos</span><b>'+ags.filter(a=>a.status==="concluido").length+'</b></div><div class="kpi"><span>Total gasto</span><b>'+brl(gasto)+'</b></div><div class="kpi"><span>Faltas</span><b>'+faltas+'</b></div></div>'+
     (c.nascimento?'<p class="note">Aniversário: '+fmtCurto(c.nascimento)+'</p>':'')+
+    (anamAtiva() ? '<div class="row" style="justify-content:space-between;align-items:center"><h2 class="sec" style="margin:14px 0 6px">Anamnese</h2><button class="btn-sm" id="fcAnam">'+(c.anamnese?'Atualizar':'Preencher')+'</button></div>'+resumoAnamnese(c) : '')+
     '<h2 class="sec">Observações da cliente</h2>'+(c.obs?'<div class="card" style="white-space:pre-wrap;margin-bottom:10px">'+esc(c.obs)+'</div>':'<p class="note">Nenhuma anotação ainda. Toque em “Editar dados” pra escrever alergias, preferências e o que for importante.</p>')+
     (futuros.length ? '<h2 class="sec">Próximos horários</h2><div class="hist">'+futuros.map(linhaHist).join("")+'</div>' : '')+
     '<h2 class="sec">Histórico no estúdio</h2>'+(passados.length? '<div class="hist">'+passados.map(linhaHist).join("")+'</div>' : '<p class="note">Nenhum atendimento ainda.</p>')+
     '<div class="foot"><button id="fcEd">Editar dados</button><button id="fcX">Fechar</button><button class="btn-primary" id="fcAg">Marcar horário</button></div>', m => {
     m.querySelector("#fcX").onclick = closeModal;
+    const ba = m.querySelector("#fcAnam"); if (ba) ba.onclick = () => { closeModal(); formAnamnese(id); };
     m.querySelector("#fcEd").onclick = () => formCliente(c);
     m.querySelector("#fcAg").onclick = () => { S.tab = "agenda"; render(); formAg(null, c.id); };
   });
@@ -1052,7 +1087,7 @@ const SEC_PADRAO = {
   retorno:'Oii {nome}, seu último {servico} foi dia {data_atendimento} e, {manter}, o ideal é que você retorne {janela}. Vou te enviar o link pra você ver quais horários tenho disponíveis pra te atender: {link} 💗',
   cuidados:'Oi, {nome}! Foi um prazer te atender. 💗 Seguem os cuidados com seu {servico}: {cuidados}. Qualquer dúvida, é só me chamar.',
   conflito:'Oii {nome}, que pena! O horário de {hora} do {quando} acabou de ser reservado por outra cliente. 😕 Escolhe outro horário aqui, por favor: {link} 💗'};
-const VERSAO_APP = "24/11 · 17h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
+const VERSAO_APP = "24/11 · 19h"; /* aparece em Ajustes pra saber se o celular já pegou a versão nova */
 function secStatus(){ const u = S.sec?.ultimaRodada; if (!u) return '<span class="secst"><i style="background:var(--muted)"></i>Ainda sem notícia da secretária</span>';
   const min = Math.round((Date.now() - new Date(u).getTime())/60000); const hh = new Date(u).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   return min <= 12 ? '<span class="secst" style="color:var(--ok)"><i style="background:var(--ok)"></i>Funcionando · conferiu a agenda às '+hh+'</span>' : '<span class="secst" style="color:var(--bad)"><i style="background:var(--bad)"></i>Parada desde '+esc(fmtCurto(new Date(u).toISOString().slice(0,10)))+' às '+hh+' · avise o Claude</span>'; }
@@ -1092,6 +1127,7 @@ function secoesFuncoes(c){
     '<label class="f">Serviços que NÃO têm retorno (separe com |)<input id="aSemPx" value="'+esc(c.semProxima||"maquiagem|penteado|babyliss")+'"></label>'+
     '<button class="btn-primary" id="aSalvaPx" style="justify-self:start">Salvar retorno</button></div>';
   h += '<h2 class="sec">Funções</h2>';
+  h += secaoChave("anamneseAtiva", anamAtiva(), "Anamnese da cliente", "Ficha de saúde e cuidados na ficha de cada cliente, com data de nascimento (usada no aniversário).", '<p class="note" style="margin:0">Abra a ficha de uma cliente e toque em “Preencher”.</p>');
   h += secaoChave("msgsManuais", manuais(), "Mensagens que eu mando pelo WhatsApp", "Botões de confirmar, cuidados, manutenção e sumidas, que você mesma envia.",
     '<p class="note">Use <span class="ph">{nome}</span> <span class="ph">{servico}</span> <span class="ph">{data}</span> <span class="ph">{hora}</span> <span class="ph">{prof}</span> <span class="ph">{estudio}</span> <span class="ph">{cuidados}</span> <span class="ph">{quando}</span>. Na “próxima”, também <span class="ph">{de}</span> <span class="ph">{ate}</span> <span class="ph">{janela}</span> e <span class="ph">{precos}</span>.</p>'+
     MSGS.map(([k,l])=>'<label class="f">'+l+'<textarea id="msg_'+k+'">'+esc(c.msgs?.[k]||DEFAULT_CFG.msgs[k])+'</textarea></label>').join("")+
@@ -1179,15 +1215,19 @@ function formSvc(s){
 }
 
 /* ---------- conexão com o banco (Firebase: login por e-mail e senha + Firestore) ---------- */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCD9idHK-P7mOBQGlqwbG3_Y-0BjaB-Ft4",
-  authDomain: "essence-glam.firebaseapp.com",
-  projectId: "essence-glam",
-  storageBucket: "essence-glam.firebasestorage.app",
-  messagingSenderId: "363415024268",
-  appId: "1:363415024268:web:d104449d1df9a6b9f501a9"
-};
+const CLIENTE = window.CLIENTE || {}; /* cliente.js: banco, nome, cores, site (um arquivo por cliente; o resto do código é igual) */
+const FIREBASE_CONFIG = CLIENTE.firebase;
 const COLECOES = ["clientes","agendamentos","caixa","acompanhamentos","reservas"];
+(function aplicaCliente(){
+  if (CLIENTE.titulo) document.title = CLIENTE.titulo;
+  const t = CLIENTE.tema || {}; const r = document.documentElement.style;
+  const MAPA = {bg:"--bg", surface:"--surface", ink:"--ink", muted:"--muted", line:"--line", accent:"--accent", accentSoft:"--accent-soft", gold:"--gold", goldText:"--gold-text", display:"--f-display"};
+  Object.entries(MAPA).forEach(([k, v]) => { if (t[k]) r.setProperty(v, t[k]); });
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = v; };
+  set("lgNome", (CLIENTE.nome||"").toUpperCase()); set("lgCid", (CLIENTE.cidade||"").toUpperCase()); set("lgMono", CLIENTE.sigla||""); set("mono", CLIENTE.sigla||"");
+  const m = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (m && CLIENTE.nome) m.content = CLIENTE.nome;
+  const tc = document.querySelector('meta[name="theme-color"]'); if (tc && t.bg) tc.content = t.bg;
+})();
 function telaLogin(mostrar, msg){
   const el = $("#login"); el.hidden = !mostrar;
   document.body.classList.toggle("sem-login", mostrar);
